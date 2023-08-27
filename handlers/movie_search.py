@@ -1,33 +1,14 @@
-import logging
+import aiohttp
 
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
-from keyboards.back_keyboard import get_back_keyboard
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.fsm.context import FSMContext
-
-from keyboards.main_keyboard import get_main_keyboard
-router = Router()
+from config_reader import config
 
 
-class SearchState(StatesGroup):
-    mainMenu = State()
-    search = State()
-
-
-@router.callback_query(F.data == "search")
-async def callback_query_handler(query: CallbackQuery, state: FSMContext):
-    await state.set_state(SearchState.search)
-    logging.info(f"Callback query: {query.data}")
-    await query.message.edit_text("What movie are you looking for?",
-                                  reply_markup=get_back_keyboard())
-    await query.answer("Ok, let's search for a movie!")
-
-
-@router.callback_query(F.data == "back")
-async def callback_query_handler(query: CallbackQuery, state: FSMContext):
-    await state.set_state(SearchState.mainMenu)
-    logging.info(f"Callback query: {query.data}")
-    await query.message.edit_text("Main menu",
-                                  reply_markup=get_main_keyboard())
-    await query.answer("Ok, let's go back to the main menu!")
+async def get_movies_by_title(title: str):
+    async with aiohttp.ClientSession() as session:
+        search_movie_url = config.search_movie_url.get_secret_value()
+        params = {
+            "api_key": config.api_key.get_secret_value(),
+            "query": title
+        }
+        async with session.get(search_movie_url, params=params) as response:
+            return await response.json()
