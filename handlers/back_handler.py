@@ -4,15 +4,18 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery
 
 from keyboards.main_keyboard import get_main_keyboard
-from keyboards.search_keyboards import get_type_keyboard
+from keyboards.search_keyboards import get_type_keyboard, get_only_back_button
 
 from filters.callback_factories import BackCallbackFactory
+
+from aiogram.fsm.context import FSMContext
+from handlers.search import SearchStates
 
 router = Router()
 
 
 @router.callback_query(BackCallbackFactory.filter())
-async def callbacks_back(query: CallbackQuery, callback_data: BackCallbackFactory):
+async def callbacks_back(query: CallbackQuery, callback_data: BackCallbackFactory, state: FSMContext):
     logging.info(f"Callback query: {query.data}")
     if callback_data.to == "home":
         await query.message.edit_text("<b>Welcome to MovieMatcherBot!</b> 🎬🤖\n\n"
@@ -25,7 +28,14 @@ async def callbacks_back(query: CallbackQuery, callback_data: BackCallbackFactor
         await query.message.edit_text(" 🔍  Search\n\n"
                                       "Choose what you want to search for:\n",
                                       reply_markup=get_type_keyboard())
-    elif callback_data.to == "cinema":
-        pass
+    elif callback_data.to == "search:movie":
+        await query.message.edit_text(" 🔍  Search » 🎬  Movie\n\n"
+                                      "Simply enter the title of the movie you're searching for, and I'll do my "
+                                      "utmost to"
+                                      "provide you with a list of matching results\n\n"
+                                      "<b>For instance: The Matrix</b>", reply_markup=get_only_back_button())
+        await state.set_state(SearchStates.waiting_for_movie_title)
+    elif callback_data.to == "close":
+        await query.message.delete()
 
     await query.answer("Ok, let's go back! 🤖")

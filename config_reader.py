@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     api_key: SecretStr
     base_image_url: SecretStr
     search_movie_url: SecretStr
+    movie_details_url: SecretStr
 
     class Config:
         env_file = ".env"

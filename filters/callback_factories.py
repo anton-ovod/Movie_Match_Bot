@@ -8,3 +8,11 @@ class BackCallbackFactory(CallbackData, prefix="back", sep="_"):
 class SearchCallbackFactory(CallbackData, prefix="search", sep="_"):
     type: str = None
 
+
+class MovieCallBackFactory(CallbackData, prefix="movie", sep="_"):
+    id: str
+
+
+class PageCallbackFactory(CallbackData, prefix="second_page", sep=":"):
+    type: str
+    page: int
