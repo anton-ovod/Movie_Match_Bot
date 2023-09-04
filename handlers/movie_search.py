@@ -15,7 +15,7 @@ async def get_movies_by_title(title: str) -> dict:
             params = {
                 "api_key": config.api_key.get_secret_value(),
                 "query": title,
-                "include_adult": "true",
+                "include_adult": "false",
                 "page": "1"
             }
             async with session.get(search_movie_url, params=params) as response:
