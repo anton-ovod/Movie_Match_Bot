@@ -1,13 +1,17 @@
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from typing import List
+from models.movie import KeyboardMovie
+
 from filters.callback_factories import MovieCallBackFactory, BackCallbackFactory, PageCallbackFactory
 
 
-def get_first_page_movies_keyboard(movies, movies_number) -> InlineKeyboardMarkup:
+def get_first_page_movies_keyboard(movies: List[KeyboardMovie], movies_number: int) -> InlineKeyboardMarkup:
     movies_builder = InlineKeyboardBuilder()
     for movie in movies[:movies_number // 2]:
-        movies_builder.button(text=movie.title, callback_data=MovieCallBackFactory(id=movie.tmdb_id))
+        movies_builder.button(text=movie.title,
+                              callback_data=MovieCallBackFactory(tmdb_id=movie.get_main_data.get("tmdb_id")))
     movies_builder.adjust(1)
 
     nav_builder = InlineKeyboardBuilder()
@@ -20,10 +24,11 @@ def get_first_page_movies_keyboard(movies, movies_number) -> InlineKeyboardMarku
     return movies_builder.as_markup()
 
 
-def get_second_page_movies_keyboard(movies, movies_number) -> InlineKeyboardMarkup:
+def get_second_page_movies_keyboard(movies: List[KeyboardMovie], movies_number: int) -> InlineKeyboardMarkup:
     movies_builder = InlineKeyboardBuilder()
     for movie in movies[movies_number // 2:]:
-        movies_builder.button(text=movie.title, callback_data=MovieCallBackFactory(id=movie.tmdb_id))
+        movies_builder.button(text=movie.title,
+                              callback_data=MovieCallBackFactory(tmdb_id=movie.get_main_data.get("tmdb_id")))
     movies_builder.adjust(1)
 
     nav_builder = InlineKeyboardBuilder()
@@ -34,4 +39,3 @@ def get_second_page_movies_keyboard(movies, movies_number) -> InlineKeyboardMark
 
     movies_builder.attach(nav_builder)
     return movies_builder.as_markup()
-

@@ -5,7 +5,7 @@ from typing import List
 
 from config_reader import config
 
-from models.movie import Movie
+from models.movie import KeyboardMovie
 
 
 async def get_movies_by_title(title: str) -> dict:
@@ -24,11 +24,12 @@ async def get_movies_by_title(title: str) -> dict:
         logging.error(f"Error while getting movies by title: {e}")
 
 
-async def get_list_of_movies_for_keyboard(title: str) -> (List[Movie], int):
+async def get_list_of_movies_for_keyboard(title: str) -> (List[KeyboardMovie], int):
     movies_data = await get_movies_by_title(title)
     movies = []
     movies_number = len(movies_data.get("results", []))
     for movie in movies_data.get("results", []):
-        movies.append(Movie(movie.get("title", "Unknown title"), movie.get("release_date", "Unknown release date"),
-                            str(movie.get("id", "Unknown id"))))
+        movies.append(
+            KeyboardMovie(movie.get("title", "Unknown title"), movie.get("release_date", "Unknown release date"),
+                          str(movie.get("id", "Unknown id"))))
     return movies, movies_number

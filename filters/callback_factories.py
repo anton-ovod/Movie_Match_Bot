@@ -10,7 +10,7 @@ class SearchCallbackFactory(CallbackData, prefix="search", sep="_"):
 
 
 class MovieCallBackFactory(CallbackData, prefix="movie", sep="_"):
-    id: str
+    tmdb_id: str
 
 
 class PageCallbackFactory(CallbackData, prefix="second_page", sep=":"):

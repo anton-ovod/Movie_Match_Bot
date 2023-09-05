@@ -1,5 +1,5 @@
 import logging
-import json
+
 
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message
@@ -10,9 +10,11 @@ from aiogram.fsm.state import StatesGroup, State
 from keyboards.search_keyboards import get_type_keyboard, get_only_back_button
 from keyboards.movies_keyboards import get_first_page_movies_keyboard, get_second_page_movies_keyboard
 
-from filters.callback_factories import SearchCallbackFactory, PageCallbackFactory
+from filters.callback_factories import SearchCallbackFactory, PageCallbackFactory, MovieCallBackFactory
 
 from handlers.movie_search import get_list_of_movies_for_keyboard
+
+from models.movie import Movie
 
 router = Router()
 
@@ -68,3 +70,12 @@ async def movies_second_page_callback_handler(query: CallbackQuery, state: FSMCo
     await query.message.edit_text(f" 🔍  <b>Results » {search_query.get('search_query')}</b>\n",
                                   reply_markup=get_second_page_movies_keyboard(movies, number_of_movies))
     await state.set_state(SearchStates.SecondPage)
+
+
+@router.callback_query(MovieCallBackFactory.filter())
+async def movie_callback_handler(query: CallbackQuery, callback_data: MovieCallBackFactory):
+    logging.info(f"Callback query: {callback_data.tmdb_id}")
+    movie = Movie(tmdb_id=callback_data.tmdb_id)
+    await movie.get_movie_details()
+    await query.message.edit_text(movie.awards)
+    await query.answer(" 🎬  Movie")
