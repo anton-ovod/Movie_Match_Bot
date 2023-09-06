@@ -13,6 +13,6 @@ class MovieCallBackFactory(CallbackData, prefix="movie", sep="_"):
     tmdb_id: str
 
 
-class PageCallbackFactory(CallbackData, prefix="second_page", sep=":"):
+class PageCallbackFactory(CallbackData, prefix="page", sep=":"):
     type: str
     page: int

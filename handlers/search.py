@@ -1,20 +1,14 @@
 import logging
 
-
 from aiogram import Router, F
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery
 
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
 from keyboards.search_keyboards import get_type_keyboard, get_only_back_button
-from keyboards.movies_keyboards import get_first_page_movies_keyboard, get_second_page_movies_keyboard
 
-from filters.callback_factories import SearchCallbackFactory, PageCallbackFactory, MovieCallBackFactory
-
-from handlers.movie_search import get_list_of_movies_for_keyboard
-
-from models.movie import Movie
+from filters.callback_factories import SearchCallbackFactory
 
 router = Router()
 
@@ -43,39 +37,3 @@ async def search_movie_callback_handler(query: CallbackQuery, state: FSMContext)
     await state.clear()
     await state.set_state(SearchStates.waiting_for_movie_title)
     await query.answer(" I'm ready to search for movies!")
-
-
-@router.message(SearchStates.waiting_for_movie_title)
-async def search_movie_title_handler(message: Message, state: FSMContext):
-    movies, number_of_movies = await get_list_of_movies_for_keyboard(message.text)
-    await message.answer(f" 🔍  <b>Results » {message.text}</b>\n",
-                         reply_markup=get_first_page_movies_keyboard(movies, number_of_movies))
-    await state.set_state(SearchStates.FirstPage)
-    await state.update_data(search_query=message.text)
-
-
-@router.callback_query(PageCallbackFactory.filter(F.type == "movie" and F.page == 1))
-async def movies_first_page_callback_handler(query: CallbackQuery, state: FSMContext):
-    search_query = await state.get_data()
-    movies, number_of_movies = await get_list_of_movies_for_keyboard(search_query.get("search_query"))
-    await query.message.edit_text(f" 🔍  <b>Results » {search_query.get('search_query')}</b>\n",
-                                  reply_markup=get_first_page_movies_keyboard(movies, number_of_movies))
-    await state.set_state(SearchStates.FirstPage)
-
-
-@router.callback_query(PageCallbackFactory.filter(F.type == "movie" and F.page == 2))
-async def movies_second_page_callback_handler(query: CallbackQuery, state: FSMContext):
-    search_query = await state.get_data()
-    movies, number_of_movies = await get_list_of_movies_for_keyboard(search_query.get("search_query"))
-    await query.message.edit_text(f" 🔍  <b>Results » {search_query.get('search_query')}</b>\n",
-                                  reply_markup=get_second_page_movies_keyboard(movies, number_of_movies))
-    await state.set_state(SearchStates.SecondPage)
-
-
-@router.callback_query(MovieCallBackFactory.filter())
-async def movie_callback_handler(query: CallbackQuery, callback_data: MovieCallBackFactory):
-    logging.info(f"Callback query: {callback_data.tmdb_id}")
-    movie = Movie(tmdb_id=callback_data.tmdb_id)
-    await movie.get_movie_details()
-    await query.message.edit_text(movie.awards)
-    await query.answer(" 🎬  Movie")

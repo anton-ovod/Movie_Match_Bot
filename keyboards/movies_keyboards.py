@@ -39,3 +39,9 @@ def get_second_page_movies_keyboard(movies: List[KeyboardMovie], movies_number: 
 
     movies_builder.attach(nav_builder)
     return movies_builder.as_markup()
+
+
+def get_movie_buttons(page: int) -> InlineKeyboardMarkup:
+    movie_buttons = InlineKeyboardBuilder()
+    movie_buttons.button(text=" « Back", callback_data=PageCallbackFactory(type="movie", page=page))
+    return movie_buttons.as_markup()

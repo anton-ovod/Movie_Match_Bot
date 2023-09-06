@@ -4,7 +4,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from keyboards.main_keyboard import get_main_keyboard
+from keyboards.main_keyboards import get_main_keyboard
 
 router = Router()
 
@@ -22,3 +22,5 @@ async def start_command_handler(message: Message):
         "Whether you're in the mood for action-packed adventures or heartwarming romances, I've got you covered. "
         "Just let me know your preferences, and I'll suggest the best movies for you.\n\n",
         reply_markup=get_main_keyboard())
+
+# about, help, settings commands need to be added

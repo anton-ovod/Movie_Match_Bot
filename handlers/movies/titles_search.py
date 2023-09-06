@@ -15,6 +15,7 @@ async def get_movies_by_title(title: str) -> dict:
             params = {
                 "api_key": config.api_key.get_secret_value(),
                 "query": title,
+                "sort_by": "popularity.desc",
                 "include_adult": "false",
                 "page": "1"
             }

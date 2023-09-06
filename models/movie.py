@@ -32,7 +32,7 @@ class KeyboardMovie:
 
 class Movie:
     def __init__(self, tmdb_id):
-        self._tmdb_id: int = tmdb_id
+        self.tmdb_id: int = tmdb_id
         self.imdb_id: str = ""
         self.title: str = ""
         self.release_date: str = ""
@@ -51,7 +51,7 @@ class Movie:
     async def get_movie_details_tmdb(self):
         try:
             async with aiohttp.ClientSession() as session:
-                movie_details_url = f"{config.movie_details_url.get_secret_value()}/{self._tmdb_id}"
+                movie_details_url = f"{config.movie_details_url.get_secret_value()}/{self.tmdb_id}"
                 params = {
                     "api_key": config.api_key.get_secret_value(),
                     "language": "en-US",
@@ -62,13 +62,21 @@ class Movie:
                     logging.info(movie_detail)
                     self.title = movie_detail.get("title", "Unknown title")
                     self.release_date = movie_detail.get("release_date", "Unknown release date")
-                    self.tagline = movie_detail.get("tagline", "Unknown tagline")
-                    self.genres = [genre.get("name", "") for genre in movie_detail.get("genres", [])]
-                    self.homepage = movie_detail.get("homepage", "")
+                    if movie_detail.get("tagline", ""):
+                        self.tagline = movie_detail.get("tagline", "Unknown tagline")
+                    if movie_detail.get("genres", []):
+                        self.genres = [genre.get("name", "") for genre in movie_detail.get("genres", [])]
+                    if movie_detail.get("homepage", ""):
+                        self.homepage = movie_detail.get("homepage")
                     self.overview = movie_detail.get("overview", "Unknown overview")
-                    self.imdb_id = str(movie_detail.get("imdb_id", "Unknown imdb id"))
-                    self.runtime = str(movie_detail.get("runtime", "Unknown runtime"))
-
+                    if movie_detail.get("imdb_id", "") is not None:
+                        self.imdb_id = str(movie_detail.get("imdb_id", ""))
+                    if movie_detail.get("runtime", "") is not None:
+                        self.runtime = str(movie_detail.get("runtime", ""))
+                    self.ratings.append({
+                        "source": "TMDB",
+                        "value": str(int(movie_detail.get("vote_average", None) * 10)) + "/100"
+                    })
                     if movie_detail.get("poster_path", ""):
                         self.poster_url = f"{config.base_image_url.get_secret_value()}{movie_detail.get('poster_path')}"
 
@@ -85,6 +93,7 @@ class Movie:
                                 "character": cast.get("character", "Unknown character"),
                                 "profile_path": f"{config.base_image_url.get_secret_value()}{cast.get('profile_path')}"
                             })
+
         except Exception as e:
             logging.error(f"Error while getting movie details(TMDB): {e}")
 
@@ -103,20 +112,28 @@ class Movie:
                     logging.info(movie_detail)
                     self.awards = movie_detail.get("Awards", "No Awards")
                     if movie_detail.get("Ratings", []):
-                        for rating in movie_detail.get("Ratings", []):
+                        for rating in movie_detail.get("Ratings", [])[1:]:
                             self.ratings.append({
                                 "source": rating.get("Source", ""),
-                                "value": rating.get("Value", "")
+                                "value": rating.get("Value", "-")
                             })
                     self.ratings.append({
                         "source": "Metascore",
-                        "value": movie_detail.get("Metascore", "")
+                        "value": movie_detail.get("Metascore", "-") + "/100"
                     })
+                    self.ratings.append({
+                        "source": "IMDB",
+                        "value": movie_detail.get("imdbRating", "-") + "/10"
+                    })
+                    if movie_detail.get("Rated", ""):
+                        for category in movie_detail.get("Rated", "").split(", "):
+                            self.year_categories.append(category)
         except Exception as e:
             logging.error(f"Error while getting movie details(OMDB): {e}")
 
     async def get_movie_details(self):
         await self.get_movie_details_tmdb()
-        await self.get_movie_details_omdb()
+        if self.imdb_id:
+            await self.get_movie_details_omdb()
 
 
