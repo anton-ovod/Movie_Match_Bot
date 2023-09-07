@@ -40,7 +40,24 @@ class Movie:
         self.tagline: str = ""
         self.genres: List[str] = []
         self.runtime: str = ""
-        self.ratings: List[Dict[str, str]] = []
+        self.ratings: List[Dict[str, str]] = [
+            {
+                "source": "TMDB",
+                "value": "-"
+            },
+            {
+                "source": "Rotten Tomatoes",
+                "value": "-"
+            },
+            {
+                "source": "Metacritic",
+                "value": "-"
+            },
+            {
+                "source": "IMDB",
+                "value": "-"
+            }
+        ]
         self.poster_url: str = ""
         self.trailer_url: str = ""
         self.cast: List[Dict[str, str]] = []
@@ -76,10 +93,8 @@ class Movie:
                         self.poster_url = f"{config.base_image_url.get_secret_value()}{movie_detail.get('poster_path')}"
                     if movie_detail.get("runtime") is not None:
                         self.runtime = str(movie_detail.get("runtime"))
-                    self.ratings.append({
-                        "source": "TMDB",
-                        "value": str(int(movie_detail.get("vote_average", None) * 10)) + "/100"
-                    })
+                    if movie_detail.get("vote_average") is not None:
+                        self.ratings[0]["value"] = str(int(movie_detail.get("vote_average", None) * 10)) + "/100"
 
                     if movie_detail.get("videos", {}).get("results", []):
                         for video in movie_detail.get("videos", {}).get("results", []):
@@ -111,27 +126,14 @@ class Movie:
                     logging.info(movie_detail)
                     self.awards = movie_detail.get("Awards", "No Awards")
 
-                    if movie_detail.get("Ratings", []):
+                    if movie_detail.get("Ratings", [])[1:]:
                         for rating in movie_detail.get("Ratings", [])[1:]:
-                            self.ratings.append({
-                                "source": rating.get("Source", ""),
-                                "value": rating.get("Value", "")
-                            })
-                    else:
-                        self.ratings.append({
-                            "source": "Rotten Tomatoes",
-                            "value": "-"
-                        })
+                            if rating.get("Source", "") == "Rotten Tomatoes":
+                                self.ratings[1]["value"] = rating.get("Value", "")
+                            if rating.get("Source", "") == "Metacritic":
+                                self.ratings[2]["value"] = rating.get("Value", "")
                     if movie_detail.get("imdbRating", "") != "N/A":
-                        self.ratings.append({
-                            "source": "IMDB",
-                            "value": movie_detail.get("imdbRating", "-") + "/10"
-                        })
-                    else:
-                        self.ratings.append({
-                            "source": "IMDB",
-                            "value": "-"
-                        })
+                        self.ratings[3]["value"] = movie_detail.get("imdbRating", "") + "/10"
 
                     if movie_detail.get("Rated", ""):
                         for category in movie_detail.get("Rated", "").split(", "):
@@ -159,7 +161,7 @@ class Movie:
         return f"<i>{self.tagline}</i>"
 
     def _create_html_genres(self) -> str:
-        return " ".join([f"#{genre} " for genre in self.genres])
+        return " ".join([f"#{genre.replace(' ', '')} " for genre in self.genres])
 
     def _create_html_overview(self) -> str:
         return f"{self.overview}"
@@ -172,14 +174,14 @@ class Movie:
             value = rating["value"]
             source = rating["source"]
             # Extract numerical value from the rating string
-            if source == "IMDB":
-                value = int(float(value.split("/")[0]) * 10)
-            elif "/" in value:
+
+            if "/" in value:
                 value = value.split("/")[0]  # Take the part before the "/"
             elif "%" in value:
                 value = value.replace("%", "")  # Remove "%" sign
-
             try:
+                if source == "IMDB":
+                    value = float(value.split("/")[0]) * 10
                 rating_value = float(value)  # Convert to float
                 total_rating += rating_value
                 total_count += 1
@@ -210,14 +212,17 @@ class Movie:
         star_rating = star_characters[round((average_rating / 20) * 2) / 2]
         ratings = ""
         ratings += f"<b>Average rating: {star_rating} • {int(average_rating)}</b>\n"
-        ratings += f"• <a href = '{self._create_link_to_tmdb()}'>{self.ratings[0]['source']}</a>: {self.ratings[0]['value'].split('/')[0]}\n"
-        ratings += f"• <a href = '{self._create_link_to_rotten_tomatoes()}'>{self.ratings[1]['source']}</a>: {self.ratings[1]['value'][:2]}\n"
-        ratings += f"• <a href = '{self._create_link_to_metacritic()}'>{self.ratings[2]['source']}</a>: {self.ratings[2]['value'].split('/')[0]}\n"
-        ratings += f"• <a href = '{self._create_link_to_imdb()}'>{self.ratings[3]['source']}</a>: {self.ratings[3]['value'].split('/')[0]}\n"
+        if self.imdb_id:
+            ratings += f"• <a href = '{self._create_link_to_tmdb()}'>{self.ratings[0]['source']}</a>: {self.ratings[0]['value'].split('/')[0]}\n"
+            ratings += f"• <a href = '{self._create_link_to_rotten_tomatoes()}'>{self.ratings[1]['source']}</a>: {self.ratings[1]['value'][:2]}\n"
+            ratings += f"• <a href = '{self._create_link_to_metacritic()}'>{self.ratings[2]['source']}</a>: {self.ratings[2]['value'].split('/')[0]}\n"
+            ratings += f"• <a href = '{self._create_link_to_imdb()}'>{self.ratings[3]['source']}</a>: {self.ratings[3]['value'].split('/')[0]}\n"
+        else:
+            ratings += f"• <a href = '{self._create_link_to_tmdb()}'>{self.ratings[0]['source']}</a>: {self.ratings[0]['value'].split('/')[0]}\n"
         return ratings
 
     def _create_html_award(self) -> str:
-        if self.awards:
+        if self.awards != "N/A":
             return f"<b>Awards:</b> {self.awards}\n\n"
         else:
             return ""
@@ -227,7 +232,7 @@ class Movie:
         cast += f"<b>Director:</b> {self.cast[-1]['name']}\n\n"
         cast += "<b>Actors:</b>\n"
         for actor in self.cast[:-1]:
-            cast += f"<i>{actor['name']}</i> as {actor['character']}\n"
+            cast += f"<i>{actor['name']}</i> {' as ' + actor['character'] if actor['character'] else ''}\n"
 
         return cast
 
