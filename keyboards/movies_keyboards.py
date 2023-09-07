@@ -39,7 +39,7 @@ def get_second_page_movies_keyboard(movies: List[KeyboardMovie], movies_number: 
     movies_builder = InlineKeyboardBuilder()
     for movie in movies[movies_number // 2:]:
         movies_builder.button(text=movie.title,
-                              callback_data=MovieCallBackFactory(tmdb_id=movie.get_main_data.get("tmdb_id")))
+                              callback_data=KeyboardMovieCallBackFactory(tmdb_id=movie.get_main_data.get("tmdb_id")))
     movies_builder.adjust(1)
 
     nav_builder = InlineKeyboardBuilder()
