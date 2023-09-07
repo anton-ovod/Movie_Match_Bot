@@ -26,7 +26,7 @@ class KeyboardMovie:
         return {
             "title": self._title,
             "release_date": self._year,
-            "tmdb_id":  self._tmdb_id
+            "tmdb_id": self._tmdb_id
         }
 
 
@@ -71,14 +71,14 @@ class Movie:
                     self.overview = movie_detail.get("overview", "Unknown overview")
                     if movie_detail.get("imdb_id", "") is not None:
                         self.imdb_id = str(movie_detail.get("imdb_id", ""))
+                    if movie_detail.get("poster_path", ""):
+                        self.poster_url = f"{config.base_image_url.get_secret_value()}{movie_detail.get('poster_path')}"
                     if movie_detail.get("runtime", "") is not None:
                         self.runtime = str(movie_detail.get("runtime", ""))
                     self.ratings.append({
                         "source": "TMDB",
                         "value": str(int(movie_detail.get("vote_average", None) * 10)) + "/100"
                     })
-                    if movie_detail.get("poster_path", ""):
-                        self.poster_url = f"{config.base_image_url.get_secret_value()}{movie_detail.get('poster_path')}"
 
                     if movie_detail.get("videos", {}).get("results", []):
                         for video in movie_detail.get("videos", {}).get("results", []):
@@ -105,17 +105,17 @@ class Movie:
                 params = {
                     "apikey": config.omdb_api_key.get_secret_value(),
                     "i": self.imdb_id,
-                    "plot": "full"
                 }
                 async with session.get(movie_details_url, params=params) as response:
                     movie_detail = await response.json()
                     logging.info(movie_detail)
                     self.awards = movie_detail.get("Awards", "No Awards")
+
                     if movie_detail.get("Ratings", []):
                         for rating in movie_detail.get("Ratings", [])[1:]:
                             self.ratings.append({
                                 "source": rating.get("Source", ""),
-                                "value": rating.get("Value", "-")
+                                "value": rating.get("Value", "")
                             })
                     self.ratings.append({
                         "source": "Metascore",
@@ -125,6 +125,7 @@ class Movie:
                         "source": "IMDB",
                         "value": movie_detail.get("imdbRating", "-") + "/10"
                     })
+
                     if movie_detail.get("Rated", ""):
                         for category in movie_detail.get("Rated", "").split(", "):
                             self.year_categories.append(category)
@@ -135,5 +136,3 @@ class Movie:
         await self.get_movie_details_tmdb()
         if self.imdb_id:
             await self.get_movie_details_omdb()
-
-

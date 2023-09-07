@@ -16,6 +16,7 @@ async def start_command_handler(message: Message):
     language = user.language_code or "en"
 
     logging.info(f"User's language: {language}")
+    logging.info(f"User's nickname: {message.from_user.username}")
     await message.answer(
         "<b>Welcome to MovieMatcherBot!</b> 🎬🤖\n\n"
         "I'm here to help you find your perfect movie match.\n"

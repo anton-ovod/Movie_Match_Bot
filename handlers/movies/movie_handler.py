@@ -7,7 +7,7 @@ from aiogram.utils.markdown import hide_link, bold, italic
 
 from keyboards.movies_keyboards import get_first_page_movies_keyboard, get_second_page_movies_keyboard, \
     get_movie_buttons
-from filters.callback_factories import PageCallbackFactory, MovieCallBackFactory
+from filters.callback_factories import PageCallbackFactory, KeyboardMovieCallBackFactory
 
 from handlers.movies.titles_search import get_list_of_movies_for_keyboard
 from handlers.search import SearchStates
@@ -47,13 +47,13 @@ async def movies_second_page_callback_handler(query: CallbackQuery, state: FSMCo
                                   reply_markup=get_second_page_movies_keyboard(movies, number_of_movies))
 
 
-@router.callback_query(MovieCallBackFactory.filter())
-async def movie_callback_handler_first_page(query: CallbackQuery, callback_data: MovieCallBackFactory,
+@router.callback_query(KeyboardMovieCallBackFactory.filter())
+async def movie_callback_handler_first_page(query: CallbackQuery, callback_data: KeyboardMovieCallBackFactory,
                                             state: FSMContext):
     logging.info(f"Callback query: {callback_data.tmdb_id}")
     movie = Movie(tmdb_id=callback_data.tmdb_id)
     await movie.get_movie_details()
-    await query.message.edit_text(f"<b>{movie.title}</b>" + "\n\n" + f"<i>{movie.overview}</i>" + hide_link(movie.poster_url),
+    await query.message.edit_text(f"<b>{movie.title}</b>" + "\n\n" + f"<i>{movie.overview}</i>\n\n" + movie.poster_url,
                                   reply_markup=get_movie_buttons(
                                       page=1 if await state.get_state() == SearchStates.FirstPage else 2))
     await query.answer(" 🎬  Movie")
