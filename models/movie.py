@@ -229,10 +229,11 @@ class Movie:
 
     def _create_html_cast(self) -> str:
         cast = ""
-        cast += f"<b>Director:</b> {self.cast[-1]['name']}\n\n"
-        cast += "<b>Actors:</b>\n"
-        for actor in self.cast[:-1]:
-            cast += f"<i>{actor['name']}</i> {' as ' + actor['character'] if actor['character'] else ''}\n"
+        if self.cast:
+            cast += f"<b>Director:</b> {self.cast[-1]['name']}\n\n"
+            cast += "<b>Actors:</b>\n"
+            for actor in self.cast[:-1]:
+                cast += f"<i>{actor['name']}</i> {' as ' + actor['character'] if actor['character'] else ''}\n"
 
         return cast
 
