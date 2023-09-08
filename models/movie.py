@@ -42,7 +42,7 @@ class Movie:
         self.runtime: str = ""
         self.ratings: List[Dict[str, str]] = [
             {
-                "source": "TMDB",
+                "source": "IMDB",
                 "value": "-"
             },
             {
@@ -54,7 +54,7 @@ class Movie:
                 "value": "-"
             },
             {
-                "source": "IMDB",
+                "source": "TMDb",
                 "value": "-"
             }
         ]
@@ -94,7 +94,7 @@ class Movie:
                     if movie_detail.get("runtime") is not None:
                         self.runtime = str(movie_detail.get("runtime"))
                     if movie_detail.get("vote_average") is not None and movie_detail.get("vote_average") != 0:
-                        self.ratings[0]["value"] = str(int(movie_detail.get("vote_average", None) * 10))
+                        self.ratings[3]["value"] = str(int(movie_detail.get("vote_average") * 10))
 
                     if movie_detail.get("videos", {}).get("results", []):
                         for video in movie_detail.get("videos", {}).get("results", []):
@@ -133,7 +133,7 @@ class Movie:
                             if rating.get("Source", "") == "Metacritic":
                                 self.ratings[2]["value"] = rating.get("Value", "")[:2]
                     if movie_detail.get("imdbRating", "") != "N/A":
-                        self.ratings[3]["value"] = movie_detail.get("imdbRating", "")
+                        self.ratings[0]["value"] = movie_detail.get("imdbRating", "")
 
                     if movie_detail.get("Rated", ""):
                         for category in movie_detail.get("Rated", "").split(", "):
@@ -155,16 +155,20 @@ class Movie:
             await self._get_movie_details_omdb()
 
     def _create_html_title_link(self) -> str:
-        return f"<b><a href = '{self.poster_url}'>{self.title + ' (' + self.release_date[:4] + ')' if self.release_date else self.title}</a></b>"
+        return f"<b><a href = '{self.poster_url}'>{self.title + ' (' + self.release_date[:4] + ')' if self.release_date else self.title}</a></b>\n"
 
     def _create_html_tagline(self) -> str:
-        return f"<i>{self.tagline}</i>"
+        if self.tagline:
+            return f"<i>{self.tagline}</i>\n\n"
+        return "\n"
 
     def _create_html_genres(self) -> str:
-        return " ".join([f"#{genre.replace(' ', '')} " for genre in self.genres])
+        if self.genres:
+            return " ".join([f"#{genre.replace(' ', '')} " for genre in self.genres]) + "\n"
+        return ""
 
     def _create_html_overview(self) -> str:
-        return f"{self.overview}"
+        return f"{self.overview}\n\n"
 
     def _calculate_average_rating(self) -> int | str:
         total_rating = 0
@@ -211,11 +215,11 @@ class Movie:
 
         ratings = ""
         ratings += f"<b>Average rating: {star_rating} • {average_rating}</b>\n"
-        ratings += f"• <a href = '{self._create_link_to_tmdb()}'>{self.ratings[0]['source']}</a>: {self.ratings[0]['value']}\n"
+        ratings += f"• <a href = '{self._create_link_to_imdb()}'>{self.ratings[0]['source']}</a>: {self.ratings[0]['value']}\n"
         ratings += f"• <a href = '{self._create_link_to_rotten_tomatoes()}'>{self.ratings[1]['source']}</a>: {self.ratings[1]['value']}\n"
         ratings += f"• <a href = '{self._create_link_to_metacritic()}'>{self.ratings[2]['source']}</a>: {self.ratings[2]['value']}\n"
-        ratings += f"• <a href = '{self._create_link_to_imdb()}'>{self.ratings[3]['source']}</a>: {self.ratings[3]['value']}\n"
-        return ratings
+        ratings += f"• <a href = '{self._create_link_to_tmdb()}'>{self.ratings[3]['source']}</a>: {self.ratings[3]['value']}\n"
+        return ratings + "\n"
 
     def _create_html_award(self) -> str:
         if self.awards != "N/A" and self.awards:
@@ -230,6 +234,7 @@ class Movie:
             cast += "<b>Actors:</b>\n"
             for actor in self.cast[:-1]:
                 cast += f"<i>{actor['name']}</i> {' as ' + actor['character'] if actor['character'] else ''}\n"
+            cast += "\n"
 
         return cast
 
@@ -238,8 +243,10 @@ class Movie:
         if self.year_categories:
             bottom_details += f"{', '.join(self.year_categories)} | "
         if self.runtime:
-            bottom_details += f"{self.runtime} min | "
+            bottom_details += f"{self.runtime} min"
         if self.country:
+            if self.runtime or self.year_categories:
+                bottom_details += " | "
             bottom_details += f"{self.country}"
         return bottom_details
 
@@ -260,12 +267,12 @@ class Movie:
     # creating a html based message with movie details
     def create_movie_message(self) -> str:
         message = ""
-        message += self._create_html_title_link() + "\n"
-        message += self._create_html_tagline() + "\n\n"
-        message += self._create_html_genres() + "\n"
-        message += self._create_html_overview() + "\n\n"
-        message += self._create_html_movie_ratings() + "\n"
+        message += self._create_html_title_link()
+        message += self._create_html_tagline()
+        message += self._create_html_genres()
+        message += self._create_html_overview()
+        message += self._create_html_movie_ratings()
         message += self._create_html_award()
-        message += self._create_html_cast() + "\n"
+        message += self._create_html_cast()
         message += self._create_html_bottom_details()
         return message
