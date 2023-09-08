@@ -154,7 +154,11 @@ class Movie:
 
     def _create_html_title_link(self) -> str:
         release_date = f" ({self.release_date[:4]})" if self.release_date else ""
-        url = self.poster_url if self.poster_url else self._create_link_to_tmdb()
+        url = self._create_link_to_tmdb()
+        if self.poster_url:
+            url = self.poster_url
+        elif self.imdb_id:
+            url = self._create_link_to_imdb()
         return f"<b><a href = '{url}'>{self.title}{release_date}</a></b>\n"
 
     def _create_html_tagline(self) -> str:
