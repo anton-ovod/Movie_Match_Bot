@@ -93,8 +93,8 @@ class Movie:
                         self.poster_url = f"{config.base_image_url.get_secret_value()}{movie_detail.get('poster_path')}"
                     if movie_detail.get("runtime") is not None:
                         self.runtime = str(movie_detail.get("runtime"))
-                    if movie_detail.get("vote_average") is not None:
-                        self.ratings[0]["value"] = str(int(movie_detail.get("vote_average", None) * 10)) + "/100"
+                    if movie_detail.get("vote_average") is not None and movie_detail.get("vote_average") != 0:
+                        self.ratings[0]["value"] = str(int(movie_detail.get("vote_average", None) * 10))
 
                     if movie_detail.get("videos", {}).get("results", []):
                         for video in movie_detail.get("videos", {}).get("results", []):
@@ -124,16 +124,16 @@ class Movie:
                 async with session.get(movie_details_url, params=params) as response:
                     movie_detail = await response.json()
                     logging.info(movie_detail)
-                    self.awards = movie_detail.get("Awards", "No Awards")
+                    self.awards = movie_detail.get("Awards")
 
                     if movie_detail.get("Ratings", [])[1:]:
                         for rating in movie_detail.get("Ratings", [])[1:]:
                             if rating.get("Source", "") == "Rotten Tomatoes":
-                                self.ratings[1]["value"] = rating.get("Value", "")
+                                self.ratings[1]["value"] = rating.get("Value", "")[:2]
                             if rating.get("Source", "") == "Metacritic":
-                                self.ratings[2]["value"] = rating.get("Value", "")
+                                self.ratings[2]["value"] = rating.get("Value", "")[:2]
                     if movie_detail.get("imdbRating", "") != "N/A":
-                        self.ratings[3]["value"] = movie_detail.get("imdbRating", "") + "/10"
+                        self.ratings[3]["value"] = movie_detail.get("imdbRating", "")
 
                     if movie_detail.get("Rated", ""):
                         for category in movie_detail.get("Rated", "").split(", "):
@@ -155,7 +155,7 @@ class Movie:
             await self._get_movie_details_omdb()
 
     def _create_html_title_link(self) -> str:
-        return f"<b><a href='{self.poster_url}'>{self.title + ' (' + self.release_date[:4] + ')' if self.release_date else self.title}</a></b>"
+        return f"<b><a href = '{self.poster_url}'>{self.title + ' (' + self.release_date[:4] + ')' if self.release_date else self.title}</a></b>"
 
     def _create_html_tagline(self) -> str:
         return f"<i>{self.tagline}</i>"
@@ -166,7 +166,7 @@ class Movie:
     def _create_html_overview(self) -> str:
         return f"{self.overview}"
 
-    def _calculate_average_rating(self) -> int:
+    def _calculate_average_rating(self) -> int | str:
         total_rating = 0
         total_count = 0
 
@@ -174,55 +174,51 @@ class Movie:
             value = rating["value"]
             source = rating["source"]
             # Extract numerical value from the rating string
-
-            if "/" in value:
-                value = value.split("/")[0]  # Take the part before the "/"
-            elif "%" in value:
-                value = value.replace("%", "")  # Remove "%" sign
             try:
                 if source == "IMDB":
                     value = float(value.split("/")[0]) * 10
-                rating_value = float(value)  # Convert to float
+                rating_value = float(value)
                 total_rating += rating_value
                 total_count += 1
             except ValueError:
                 continue
 
         if total_count == 0:
-            return 0
+            return "-"
 
         average_rating = total_rating // total_count
-        return average_rating
+        return int(average_rating)
 
     def _create_html_movie_ratings(self) -> str:
         star_characters = {
-            0: "☆☆☆☆☆",
-            0.5: "★☆☆☆☆",
-            1: "★☆☆☆☆",
-            1.5: "★★☆☆☆",
-            2: "★★☆☆☆",
-            2.5: "★★★☆☆",
-            3: "★★★☆☆",
-            3.5: "★★★★☆",
-            4: "★★★★☆",
-            4.5: "★★★★★",
-            5: "★★★★★"
+            0: "🌑🌑🌑🌑🌑",
+            0.5: "🌗🌑🌑🌑🌑",
+            1: "🌕🌑🌑🌑🌑",
+            1.5: "🌕🌗🌑🌑🌑",
+            2: "🌕🌕🌑🌑🌑",
+            2.5: "🌕🌕🌗🌑🌑",
+            3: "🌕🌕🌕🌑🌑",
+            3.5: "🌕🌕🌕🌗🌑",
+            4: "🌕🌕🌕🌕🌑",
+            4.5: "🌕🌕🌕🌕🌗",
+            5: "🌕🌕🌕🌕🌕"
         }
         average_rating = self._calculate_average_rating()
-        star_rating = star_characters[round((average_rating / 20) * 2) / 2]
+        try:
+            star_rating = star_characters[round((average_rating / 20) * 2) / 2]
+        except (TypeError, KeyError):
+            star_rating = star_characters[0]
+
         ratings = ""
-        ratings += f"<b>Average rating: {star_rating} • {int(average_rating)}</b>\n"
-        if self.imdb_id:
-            ratings += f"• <a href = '{self._create_link_to_tmdb()}'>{self.ratings[0]['source']}</a>: {self.ratings[0]['value'].split('/')[0]}\n"
-            ratings += f"• <a href = '{self._create_link_to_rotten_tomatoes()}'>{self.ratings[1]['source']}</a>: {self.ratings[1]['value'][:2]}\n"
-            ratings += f"• <a href = '{self._create_link_to_metacritic()}'>{self.ratings[2]['source']}</a>: {self.ratings[2]['value'].split('/')[0]}\n"
-            ratings += f"• <a href = '{self._create_link_to_imdb()}'>{self.ratings[3]['source']}</a>: {self.ratings[3]['value'].split('/')[0]}\n"
-        else:
-            ratings += f"• <a href = '{self._create_link_to_tmdb()}'>{self.ratings[0]['source']}</a>: {self.ratings[0]['value'].split('/')[0]}\n"
+        ratings += f"<b>Average rating: {star_rating} • {average_rating}</b>\n"
+        ratings += f"• <a href = '{self._create_link_to_tmdb()}'>{self.ratings[0]['source']}</a>: {self.ratings[0]['value']}\n"
+        ratings += f"• <a href = '{self._create_link_to_rotten_tomatoes()}'>{self.ratings[1]['source']}</a>: {self.ratings[1]['value']}\n"
+        ratings += f"• <a href = '{self._create_link_to_metacritic()}'>{self.ratings[2]['source']}</a>: {self.ratings[2]['value']}\n"
+        ratings += f"• <a href = '{self._create_link_to_imdb()}'>{self.ratings[3]['source']}</a>: {self.ratings[3]['value']}\n"
         return ratings
 
     def _create_html_award(self) -> str:
-        if self.awards != "N/A":
+        if self.awards != "N/A" and self.awards:
             return f"<b>Awards:</b> {self.awards}\n\n"
         else:
             return ""
@@ -254,10 +250,12 @@ class Movie:
         return f"https://www.imdb.com/title/{self.imdb_id}"
 
     def _create_link_to_rotten_tomatoes(self):
-        return f"https://www.rottentomatoes.com/m/{self.title.replace(' ', '_')}"
+        title = self.title.replace(' ', '_').replace(':', '_').lower().replace("'", '_')
+        return f"https://www.rottentomatoes.com/m/{title}"
 
     def _create_link_to_metacritic(self):
-        return f"https://www.metacritic.com/movie/{self.title.replace(' ', '-')}"
+        title = self.title.replace(' ', '-').replace(':', '-').lower().replace("'", '')
+        return f"https://www.metacritic.com/movie/{title}"
 
     # creating a html based message with movie details
     def create_movie_message(self) -> str:
