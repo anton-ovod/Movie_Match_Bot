@@ -57,3 +57,10 @@ def get_movie_buttons(page: int) -> InlineKeyboardMarkup:
     movie_buttons.button(text=" « Back", callback_data=PageCallbackFactory(type="movie", page=page))
 
     return movie_buttons.as_markup()
+
+
+def get_back_button() -> InlineKeyboardMarkup:
+    back_button = InlineKeyboardBuilder()
+    back_button.button(text=" « Back", callback_data=BackCallbackFactory(to="search:movie"))
+
+    return back_button.as_markup()

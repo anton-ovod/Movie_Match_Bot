@@ -1,8 +1,6 @@
 import aiohttp
 import logging
 
-from aiogram.utils.markdown import hide_link, bold, italic
-
 from typing import Dict, List
 
 from config_reader import config
@@ -31,7 +29,7 @@ class KeyboardMovie:
 
 
 class Movie:
-    def __init__(self, tmdb_id):
+    def __init__(self, tmdb_id: int):
         self.tmdb_id: int = tmdb_id
         self.imdb_id: str = ""
         self.title: str = ""
@@ -155,7 +153,9 @@ class Movie:
             await self._get_movie_details_omdb()
 
     def _create_html_title_link(self) -> str:
-        return f"<b><a href = '{self.poster_url}'>{self.title + ' (' + self.release_date[:4] + ')' if self.release_date else self.title}</a></b>\n"
+        release_date = f" ({self.release_date[:4]})" if self.release_date else ""
+        url = self.poster_url if self.poster_url else self._create_link_to_tmdb()
+        return f"<b><a href = '{url}'>{self.title}{release_date}</a></b>\n"
 
     def _create_html_tagline(self) -> str:
         if self.tagline:
@@ -168,15 +168,17 @@ class Movie:
         return ""
 
     def _create_html_overview(self) -> str:
-        return f"{self.overview}\n\n"
+        if self.overview:
+            return f"{self.overview}\n\n"
+        return ""
 
     def _calculate_average_rating(self) -> int | str:
         total_rating = 0
         total_count = 0
 
         for rating in self.ratings:
-            value = rating["value"]
-            source = rating["source"]
+            value = rating.get("value")
+            source = rating.get("source")
             # Extract numerical value from the rating string
             try:
                 if source == "IMDB":
@@ -231,16 +233,17 @@ class Movie:
         cast = ""
         if self.cast:
             cast += f"<b>Director:</b> {self.cast[-1]['name']}\n\n"
-            cast += "<b>Actors:</b>\n"
-            for actor in self.cast[:-1]:
-                cast += f"<i>{actor['name']}</i> {' as ' + actor['character'] if actor['character'] else ''}\n"
-            cast += "\n"
+            if len(self.cast) > 1:
+                cast += "<b>Actors:</b>\n"
+                for actor in self.cast[:-1]:
+                    cast += f"<i>{actor['name']}</i> {' as ' + actor['character'] if actor['character'] else ''}\n"
+                cast += "\n"
 
         return cast
 
     def _create_html_bottom_details(self) -> str:
         bottom_details = ""
-        if self.year_categories:
+        if self.year_categories and self.year_categories[0] != "N/A":
             bottom_details += f"{', '.join(self.year_categories)} | "
         if self.runtime:
             bottom_details += f"{self.runtime} min"
