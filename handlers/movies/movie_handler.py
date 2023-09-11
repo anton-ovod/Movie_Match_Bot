@@ -5,10 +5,9 @@ from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
-
 from keyboards.movies_keyboards import get_first_page_movies_keyboard, get_second_page_movies_keyboard, \
     get_movie_buttons, get_back_button
-from filters.callback_factories import PageCallbackFactory, KeyboardMovieCallBackFactory
+from filters.callback_factories import PageCallbackFactory, KeyboardMovieCallBackFactory, MovieCallBackFactory
 
 from handlers.movies.titles_search import get_list_of_movies_for_keyboard
 from handlers.search import SearchStates
@@ -58,5 +57,17 @@ async def movie_callback_handler_first_page(query: CallbackQuery, callback_data:
     movie = Movie(tmdb_id=int(callback_data.tmdb_id))
     await movie.get_movie_details()
     await query.message.edit_text(text=movie.create_movie_message(),
-                                  reply_markup=get_movie_buttons(page=1 if await state.get_state() == SearchStates.FirstPage else 2, movie_data=movie))
+                                  reply_markup=get_movie_buttons(
+                                      page=1 if await state.get_state() == SearchStates.FirstPage else 2,
+                                      movie_data=movie))
     await query.answer(" 🎬  Movie")
+
+
+@router.callback_query(MovieCallBackFactory.filter(F.feature == "watch"))
+async def providers_callback_handler(query: CallbackQuery):
+    await query.answer(text="Not implemented yet", show_alert=True)
+
+
+@router.callback_query(MovieCallBackFactory.filter(F.feature == "recommendations"))
+async def providers_callback_handler(query: CallbackQuery):
+    await query.answer(text="Not implemented yet", show_alert=True)

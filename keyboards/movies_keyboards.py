@@ -1,12 +1,10 @@
+from typing import List
+
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from typing import List
+from filters.callback_factories import KeyboardMovieCallBackFactory, BackCallbackFactory, PageCallbackFactory, MovieCallBackFactory
 from models.movie import KeyboardMovie, Movie
-
-from filters.callback_factories import KeyboardMovieCallBackFactory, BackCallbackFactory, PageCallbackFactory
-
-import logging
 
 
 def get_first_page_movies_keyboard(movies: List[KeyboardMovie], movies_number: int) -> InlineKeyboardMarkup:
@@ -73,10 +71,10 @@ def get_movie_buttons(page: int, movie_data: Movie) -> InlineKeyboardMarkup:
         movie_buttons.button(text=" 🎞 Trailer",
                              url="https://www.youtube.com/results?search_query=trailer " + movie_data.title_year)
 
-    movie_buttons.button(text=" 🗂 Recommendations", callback_data=PageCallbackFactory(type="movie", page=page))
-    movie_buttons.button(text=" 📼 Where to watch", callback_data=PageCallbackFactory(type="movie", page=page))
+    movie_buttons.button(text=" 🗂 Recommendations", callback_data=MovieCallBackFactory(feature="recommendations"))
+    movie_buttons.button(text=" 📼 Where to watch", callback_data=MovieCallBackFactory(feature="watch"))
     movie_buttons.button(text=" ⬅️ Back", callback_data=PageCallbackFactory(type="movie", page=page))
-    movie_buttons.button(text=" 🤲 Share", switch_inline_query=movie_data.create_movie_message())
+    movie_buttons.button(text=" 🤲 Share", switch_inline_query=movie_data.title_year)
     movie_buttons.adjust(2)
     return movie_buttons.as_markup()
 
