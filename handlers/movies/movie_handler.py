@@ -58,5 +58,5 @@ async def movie_callback_handler_first_page(query: CallbackQuery, callback_data:
     movie = Movie(tmdb_id=int(callback_data.tmdb_id))
     await movie.get_movie_details()
     await query.message.edit_text(text=movie.create_movie_message(),
-                                  reply_markup=get_movie_buttons(page=1 if await state.get_state() == SearchStates.FirstPage else 2))
+                                  reply_markup=get_movie_buttons(page=1 if await state.get_state() == SearchStates.FirstPage else 2, movie_data=movie))
     await query.answer(" 🎬  Movie")

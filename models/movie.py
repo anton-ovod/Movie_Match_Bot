@@ -30,15 +30,15 @@ class KeyboardMovie:
 
 class Movie:
     def __init__(self, tmdb_id: int):
-        self.tmdb_id: int = tmdb_id
-        self.imdb_id: str = ""
-        self.title: str = ""
-        self.release_date: str = ""
-        self.overview: str = ""
-        self.tagline: str = ""
-        self.genres: List[str] = []
-        self.runtime: str = ""
-        self.ratings: List[Dict[str, str]] = [
+        self._tmdb_id: int = tmdb_id
+        self._imdb_id: str = ""
+        self._title: str = ""
+        self._release_date: str = ""
+        self._overview: str = ""
+        self._tagline: str = ""
+        self._genres: List[str] = []
+        self._runtime: str = ""
+        self._ratings: List[Dict[str, str]] = [
             {
                 "source": "IMDB",
                 "value": "-"
@@ -56,18 +56,44 @@ class Movie:
                 "value": "-"
             }
         ]
-        self.poster_url: str = ""
-        self.trailer_url: str = ""
-        self.cast: List[Dict[str, str]] = []
-        self.homepage: str = ""
-        self.awards: str = ""
-        self.country: str = ""
-        self.year_categories: List[str] = []
+        self._poster_url: str = ""
+        self._trailer_url: str = ""
+        self._cast: List[Dict[str, str]] = []
+        self._homepage: str = ""
+        self._awards: str = ""
+        self._country: str = ""
+        self._year_categories: List[str] = []
+
+    @property
+    def homepage(self):
+        return self._homepage
+
+    @property
+    def poster_url(self):
+        return self._poster_url
+
+    @property
+    def imdb_url(self):
+        if self._imdb_id:
+            return self._create_link_to_imdb()
+        return ""
+
+    @property
+    def trailer_url(self):
+        return self._trailer_url
+
+    @property
+    def tmdb_url(self):
+        return self._create_link_to_tmdb()
+
+    @property
+    def title_year(self):
+        return self._title + " " + self._release_date[:4] if self._release_date else self._title
 
     async def _get_movie_details_tmdb(self) -> None:
         try:
             async with aiohttp.ClientSession() as session:
-                movie_details_url = f"{config.movie_details_url.get_secret_value()}/{self.tmdb_id}"
+                movie_details_url = f"{config.movie_details_url.get_secret_value()}/{self._tmdb_id}"
                 params = {
                     "api_key": config.api_key.get_secret_value(),
                     "language": "en-US",
@@ -75,34 +101,36 @@ class Movie:
                 }
                 async with session.get(movie_details_url, params=params) as response:
                     movie_detail = await response.json()
-                    logging.info(movie_detail)
-                    self.title = movie_detail.get("title")
-                    self.release_date = movie_detail.get("release_date")
+                    self._title = movie_detail.get("title")
+                    self._release_date = movie_detail.get("release_date")
                     if movie_detail.get("tagline"):
-                        self.tagline = movie_detail.get("tagline")
+                        self._tagline = movie_detail.get("tagline")
                     if movie_detail.get("genres", []):
-                        self.genres = [genre.get("name") for genre in movie_detail.get("genres")]
+                        self._genres = [genre.get("name") for genre in movie_detail.get("genres")]
                     if movie_detail.get("homepage"):
-                        self.homepage = movie_detail.get("homepage")
-                    self.overview = movie_detail.get("overview")
+                        self._homepage = movie_detail.get("homepage")
+                    self._overview = movie_detail.get("overview")
                     if movie_detail.get("imdb_id") is not None:
-                        self.imdb_id = str(movie_detail.get("imdb_id"))
+                        self._imdb_id = str(movie_detail.get("imdb_id"))
+                        await self._get_movie_details_omdb()
                     if movie_detail.get("poster_path"):
-                        self.poster_url = f"{config.base_image_url.get_secret_value()}{movie_detail.get('poster_path')}"
+                        self._poster_url = (f"{config.base_image_url.get_secret_value()}"
+                                            f"{movie_detail.get('poster_path')}")
                     if movie_detail.get("runtime") is not None:
-                        self.runtime = str(movie_detail.get("runtime"))
+                        self._runtime = str(movie_detail.get("runtime"))
                     if movie_detail.get("vote_average") is not None and movie_detail.get("vote_average") != 0:
-                        self.ratings[3]["value"] = str(int(movie_detail.get("vote_average") * 10))
+                        self._ratings[3]["value"] = str(int(movie_detail.get("vote_average") * 10))
 
                     if movie_detail.get("videos", {}).get("results", []):
                         for video in movie_detail.get("videos", {}).get("results", []):
-                            if video.get("type", "") == "Trailer":
-                                self.trailer_url = f"{config.base_video_url}{video.get('key')}"
+                            if video.get("type") == "Trailer":
+                                self._trailer_url = f"{config.base_video_url.get_secret_value()}{video.get('key')}"
+                                logging.info(f"Trailer url: {self._trailer_url}")
                                 break
 
                     if movie_detail.get("credits", {}).get("cast", []):
                         for cast in movie_detail.get("credits", {}).get("cast", [])[:3]:
-                            self.cast.append({
+                            self._cast.append({
                                 "name": cast.get("name"),
                                 "character": cast.get("character")
                             })
@@ -114,73 +142,70 @@ class Movie:
         try:
             async with aiohttp.ClientSession() as session:
                 movie_details_url = config.omdb_base_url.get_secret_value()
-                logging.info("IMDB ID: " + self.imdb_id)
+                logging.info("IMDB ID: " + self._imdb_id)
                 params = {
                     "apikey": config.omdb_api_key.get_secret_value(),
-                    "i": self.imdb_id,
+                    "i": self._imdb_id,
                 }
                 async with session.get(movie_details_url, params=params) as response:
                     movie_detail = await response.json()
-                    logging.info(movie_detail)
-                    self.awards = movie_detail.get("Awards")
+                    self._awards = movie_detail.get("Awards")
 
                     if movie_detail.get("Ratings", [])[1:]:
                         for rating in movie_detail.get("Ratings", [])[1:]:
                             if rating.get("Source", "") == "Rotten Tomatoes":
-                                self.ratings[1]["value"] = rating.get("Value", "")[:2]
+                                self._ratings[1]["value"] = rating.get("Value", "")[:2]
                             if rating.get("Source", "") == "Metacritic":
-                                self.ratings[2]["value"] = rating.get("Value", "")[:2]
+                                self._ratings[2]["value"] = rating.get("Value", "")[:2]
                     if movie_detail.get("imdbRating", "") != "N/A":
-                        self.ratings[0]["value"] = movie_detail.get("imdbRating", "")
+                        self._ratings[0]["value"] = movie_detail.get("imdbRating", "")
 
                     if movie_detail.get("Rated", ""):
                         for category in movie_detail.get("Rated", "").split(", "):
-                            self.year_categories.append(category)
+                            self._year_categories.append(category)
 
                     if movie_detail.get("Director", ""):
-                        self.cast.append({
+                        self._cast.append({
                             "name": movie_detail.get("Director"),
                             "character": "Director"
                         })
                     if movie_detail.get("Country") != "N/A":
-                        self.country = movie_detail.get("Country")
+                        self._country = movie_detail.get("Country")
         except Exception as e:
             logging.error(f"Error while getting movie details(OMDB): {e}")
 
     async def get_movie_details(self) -> None:
         await self._get_movie_details_tmdb()
-        if self.imdb_id:
-            await self._get_movie_details_omdb()
 
     def _create_html_title_link(self) -> str:
-        release_date = f" ({self.release_date[:4]})" if self.release_date else ""
+        release_date = f" ({self._release_date[:4]})" if self._release_date else ""
         url = self._create_link_to_tmdb()
-        if self.poster_url:
-            url = self.poster_url
-        elif self.imdb_id:
+        if self._poster_url:
+            url = self._poster_url
+        elif self._imdb_id:
             url = self._create_link_to_imdb()
-        return f"<b><a href = '{url}'>{self.title}{release_date}</a></b>\n"
+        return f"<b><a href = '{url}'>{self._title}{release_date}</a></b>\n"
 
     def _create_html_tagline(self) -> str:
-        if self.tagline:
-            return f"<i>{self.tagline}</i>\n\n"
+        if self._tagline:
+            return f"<i>{self._tagline}</i>\n\n"
         return "\n"
 
     def _create_html_genres(self) -> str:
-        if self.genres:
-            return " ".join([f"#{genre.replace(' ', '')} " for genre in self.genres]) + "\n"
+        if self._genres:
+            return " ".join([f"#{genre.replace(' ', '')} " for genre in self._genres]) + "\n"
         return ""
 
     def _create_html_overview(self) -> str:
-        if self.overview:
-            return f"{self.overview}\n\n"
+        if self._overview:
+            return f"{self._overview}\n\n"
         return ""
 
     def _calculate_average_rating(self) -> int | str:
         total_rating = 0
         total_count = 0
 
-        for rating in self.ratings:
+        for rating in self._ratings:
             value = rating.get("value")
             source = rating.get("source")
             # Extract numerical value from the rating string
@@ -221,25 +246,29 @@ class Movie:
 
         ratings = ""
         ratings += f"<b>Average rating: {star_rating} • {average_rating}</b>\n"
-        ratings += f"• <a href = '{self._create_link_to_imdb()}'>{self.ratings[0]['source']}</a>: {self.ratings[0]['value']}\n"
-        ratings += f"• <a href = '{self._create_link_to_rotten_tomatoes()}'>{self.ratings[1]['source']}</a>: {self.ratings[1]['value']}\n"
-        ratings += f"• <a href = '{self._create_link_to_metacritic()}'>{self.ratings[2]['source']}</a>: {self.ratings[2]['value']}\n"
-        ratings += f"• <a href = '{self._create_link_to_tmdb()}'>{self.ratings[3]['source']}</a>: {self.ratings[3]['value']}\n"
+        ratings += (f"• <a href = '{self._create_link_to_imdb()}'>"
+                    f"{self._ratings[0]['source']}</a>: {self._ratings[0]['value']}\n")
+        ratings += (f"• <a href = '{self._create_link_to_rotten_tomatoes()}'>"
+                    f"{self._ratings[1]['source']}</a>: {self._ratings[1]['value']}\n")
+        ratings += (f"• <a href = '{self._create_link_to_metacritic()}'>"
+                    f"{self._ratings[2]['source']}</a>: {self._ratings[2]['value']}\n")
+        ratings += (f"• <a href = '{self._create_link_to_tmdb()}'>"
+                    f"{self._ratings[3]['source']}</a>: {self._ratings[3]['value']}\n")
         return ratings + "\n"
 
     def _create_html_award(self) -> str:
-        if self.awards != "N/A" and self.awards:
-            return f"<b>Awards:</b> {self.awards}\n\n"
+        if self._awards != "N/A" and self._awards:
+            return f"<b>Awards:</b> {self._awards}\n\n"
         else:
             return ""
 
     def _create_html_cast(self) -> str:
         cast = ""
-        if self.cast:
-            cast += f"<b>Director:</b> {self.cast[-1]['name']}\n\n"
-            if len(self.cast) > 1:
+        if self._cast:
+            cast += f"<b>Director:</b> {self._cast[-1]['name']}\n\n"
+            if len(self._cast) > 1:
                 cast += "<b>Actors:</b>\n"
-                for actor in self.cast[:-1]:
+                for actor in self._cast[:-1]:
                     cast += f"<i>{actor['name']}</i> {' as ' + actor['character'] if actor['character'] else ''}\n"
                 cast += "\n"
 
@@ -247,28 +276,28 @@ class Movie:
 
     def _create_html_bottom_details(self) -> str:
         bottom_details = ""
-        if self.year_categories and self.year_categories[0] != "N/A":
-            bottom_details += f"{', '.join(self.year_categories)} | "
-        if self.runtime:
-            bottom_details += f"{self.runtime} min"
-        if self.country:
-            if self.runtime or self.year_categories:
+        if self._year_categories and self._year_categories[0] != "N/A":
+            bottom_details += f"{', '.join(self._year_categories)} | "
+        if self._runtime:
+            bottom_details += f"{self._runtime} min"
+        if self._country:
+            if self._runtime or self._year_categories:
                 bottom_details += " | "
-            bottom_details += f"{self.country}"
+            bottom_details += f"{self._country}"
         return bottom_details
 
     def _create_link_to_tmdb(self):
-        return f"https://www.themoviedb.org/movie/{self.tmdb_id}"
+        return f"https://www.themoviedb.org/movie/{self._tmdb_id}"
 
     def _create_link_to_imdb(self):
-        return f"https://www.imdb.com/title/{self.imdb_id}"
+        return f"https://www.imdb.com/title/{self._imdb_id}"
 
     def _create_link_to_rotten_tomatoes(self):
-        title = self.title.replace(' ', '_').replace(':', '_').lower().replace("'", '_')
+        title = self._title.replace(' ', '_').replace(':', '_').lower().replace("'", '_')
         return f"https://www.rottentomatoes.com/m/{title}"
 
     def _create_link_to_metacritic(self):
-        title = self.title.replace(' ', '-').replace(':', '-').lower().replace("'", '')
+        title = self._title.replace(' ', '-').replace(':', '-').lower().replace("'", '')
         return f"https://www.metacritic.com/movie/{title}"
 
     # creating a html based message with movie details
