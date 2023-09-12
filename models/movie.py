@@ -1,8 +1,6 @@
 from typing import List
-from pydantic import BaseModel, PositiveInt, HttpUrl
+from pydantic import BaseModel, PositiveInt
 from datetime import date
-
-# from utils.imdb_api import get_movie_details_tmdb
 
 
 class KeyboardMovie(BaseModel):
@@ -24,34 +22,31 @@ class Rating(BaseModel):
 class Actor(BaseModel):
     name: str
     character: str
-    profile_url: HttpUrl | None
+    profile_url: str = None
 
 
 class Movie(KeyboardMovie):
     # Data is getting from tmdb api
-    imdb_id: PositiveInt | None = None
-    tagline: str | None = None
-    overview: str | None = None
-    poster_url: HttpUrl | None = None
-    trailer_url: HttpUrl | None = None
-    homepage: HttpUrl | None = None
-    runtime: PositiveInt | None = None
-    genres: List[str] | None = None
+    imdb_id: str = None
+    tagline: str = None
+    overview: str = None
+    poster_url: str = None
+    trailer_url: str = None
+    homepage: str = None
+    runtime: PositiveInt = None
+    genres: List[str] = []
 
     # Data is getting from omdb api
-    ratings: List[Rating] | None = None
-    cast: List[Actor] | None = None
-    awards: str | None = None
-    countries: List[str] | None = None
+    ratings: List[Rating] = []
+    cast: List[Actor] = []
+    awards: str = None
+    countries: List[str] = []
 
     # Self made links
-    rotten_tomatoes_url: HttpUrl | None = None
-    metacritic_url: HttpUrl | None = None
-    imdb_url: HttpUrl | None = None
-    tmdb_url: HttpUrl | None = None
-
-    #async def fill_data(self) -> None:
-        #await get_movie_details_tmdb(self)
+    rotten_tomatoes_url: str = None
+    metacritic_url: str = None
+    imdb_url: str = None
+    tmdb_url: str = None
 
     def _create_html_movie_ratings(self) -> str:
         star_characters = {

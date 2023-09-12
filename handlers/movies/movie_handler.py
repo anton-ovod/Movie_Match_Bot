@@ -9,7 +9,7 @@ from keyboards.movies_keyboards import (get_page_of_movies_keyboard, get_back_bu
 from filters.callback_factories import PageCallbackFactory, KeyboardMovieCallBackFactory, MovieCallBackFactory
 
 from handlers.search import SearchStates
-from utils.imdb_api import get_movies_by_title
+from utils.imdb_api import get_movies_by_title, get_movie_details_tmdb
 from models.movie import Movie
 
 router = Router()
@@ -43,7 +43,8 @@ async def movies_first_page_callback_handler(query: CallbackQuery, callback_data
 async def movie_callback_handler_first_page(query: CallbackQuery, callback_data: KeyboardMovieCallBackFactory):
     logging.info(f"Callback query: {query.data}")
     movie = Movie(title=callback_data.title, release_date=callback_data.release_date, tmdb_id=callback_data.tmdb_id)
-    logging.info(f"Movie: {movie}")
+    await get_movie_details_tmdb(movie)
+    logging.info(f"Movie: {movie.model_dump_json(indent=4)}")
     await query.answer(f" 🔍  {movie.pretty_title}")
 #
 #

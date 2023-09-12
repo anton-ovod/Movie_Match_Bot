@@ -2,7 +2,6 @@ import aiohttp
 import logging
 
 from typing import List
-
 from config_reader import config
 
 from models.movie import KeyboardMovie, Movie, Actor, Rating
@@ -50,14 +49,14 @@ async def get_movie_details_tmdb(movie: Movie) -> None:
                 if overview := movie_detail.get("overview"):
                     movie.overview = overview
                 if poster_path := movie_detail.get("poster_path"):
-                    movie.poster_url = f"{config.poster_base_url.get_secret_value()}{poster_path}"
+                    movie.poster_url = f'{config.base_image_url.get_secret_value()}{poster_path}'
                 if videos := movie_detail.get("videos").get("results"):
                     for video in videos:
                         if video.get("type") == "Trailer":
-                            movie.trailer_url = f"{config.base_video_url.get_secret_value()}{video.get('key')}"
+                            movie.trailer_url = f'{config.base_video_url.get_secret_value()}{video.get("key")}'
                             break
                 else:
-                    movie.trailer_url = f"{config.youtube_search_url.get_secret_value()}trailer {movie.pretty_title}"
+                    movie.trailer_url = f'{config.youtube_search_url.get_secret_value()}trailer {movie.pretty_title}'
                 if genres := movie_detail.get("genres"):
                     movie.genres = [genre.get("name") for genre in genres]
                 if runtime := movie_detail.get("runtime"):
@@ -66,8 +65,8 @@ async def get_movie_details_tmdb(movie: Movie) -> None:
                     for actor in actors[:3]:
                         movie.cast.append(Actor(name=actor.get("name"),
                                                 character=actor.get("character"),
-                                                profile_url=f"{config.person_base_url.get_secret_value()}"
-                                                            f"{actor.get('id')}"))
+                                                profile_url=f'{config.person_base_url.get_secret_value()}'
+                                                            f'{actor.get("id")}'))
                 if homepage := movie_detail.get("homepage"):
                     movie.homepage = homepage
                 if tmdb_rating := movie_detail.get("vote_average"):
