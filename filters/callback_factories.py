@@ -9,8 +9,8 @@ class SearchCallbackFactory(CallbackData, prefix="search", sep="_"):
     type: str = None
 
 
-class KeyboardMovieCallBackFactory(CallbackData, prefix="movie", sep="_"):
-    tmdb_id: str
+class KeyboardMovieCallBackFactory(CallbackData, prefix="movie", sep=":"):
+    tmdb_id: int
 
 
 class MovieCallBackFactory(CallbackData, prefix="movie", sep=":"):
