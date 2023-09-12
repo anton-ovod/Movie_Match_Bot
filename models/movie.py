@@ -5,9 +5,9 @@ from datetime import date
 
 class KeyboardMovie(BaseModel):
     # Data is getting from tmdb api
-    title: str
+    title: str = None
     release_date: date | None = None
-    tmdb_id: PositiveInt
+    tmdb_id: PositiveInt = None
 
     @property
     def pretty_title(self) -> str:

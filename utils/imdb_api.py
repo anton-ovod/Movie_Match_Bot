@@ -3,7 +3,7 @@ import logging
 
 from typing import List
 from config_reader import config
-
+from datetime import datetime
 from models.movie import KeyboardMovie, Movie, Actor, Rating
 
 
@@ -22,10 +22,15 @@ async def get_movies_by_title(title: str) -> List[KeyboardMovie]:
                 results = sorted(data.get("results"), key=lambda x: x.get("popularity"), reverse=True)
                 movies = []
                 for result in results:
-                    movies.append(KeyboardMovie(title=result.get("title"),
-                                                release_date=result.get("release_date")
-                                                if result.get("release_date") else None,
-                                                tmdb_id=result.get("id")))
+                    title = result.get("title")
+                    tmdb_id = result.get("id")
+                    try:
+                        release_date = datetime.strptime(result.get("release_date"), "%Y-%m-%d").date()
+                    except ValueError:
+                        release_date = None
+                    movies.append(KeyboardMovie(title=title,
+                                                release_date=release_date,
+                                                tmdb_id=tmdb_id))
                 return movies
     except Exception as e:
         logging.error(f"Error while getting movies by title: {e}")
@@ -42,6 +47,12 @@ async def get_movie_details_tmdb(movie: Movie) -> None:
             }
             async with session.get(movie_details_url, params=params) as response:
                 movie_detail = await response.json()
+                if title := movie_detail.get("title"):
+                    movie.title = title
+                if release_date := movie_detail.get("release_date"):
+                    movie.release_date = datetime.strptime(release_date, "%Y-%m-%d").date()
+                else:
+                    movie.release_date = None
                 if imdb_id := movie_detail.get("imdb_id"):
                     movie.imdb_id = imdb_id
                 if tagline := movie_detail.get("tagline"):
@@ -56,7 +67,8 @@ async def get_movie_details_tmdb(movie: Movie) -> None:
                             movie.trailer_url = f'{config.base_video_url.get_secret_value()}{video.get("key")}'
                             break
                 else:
-                    movie.trailer_url = f'{config.youtube_search_url.get_secret_value()}trailer {movie.pretty_title}'
+                    movie.trailer_url = (f'{config.youtube_search_url.get_secret_value()}trailer'
+                                         f'{movie.pretty_title.split(" (")[0].replace(" ", "+")}')
                 if genres := movie_detail.get("genres"):
                     movie.genres = [genre.get("name") for genre in genres]
                 if runtime := movie_detail.get("runtime"):

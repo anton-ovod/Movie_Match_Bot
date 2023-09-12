@@ -29,8 +29,5 @@ async def get_movie_details_omdb(movie: Movie) -> None:
                         movie.ratings.append(Rating(source=rating.get("Source"), value=int(rating.get("Value")[0:2])))
                 if imdb_rating := movie_detail.get("imdbRating"):
                     movie.ratings.append(Rating(source="IMDB", value=float(imdb_rating)))
-
-
-
     except Exception as e:
         logging.error(f"Error while getting movie details(OMDB): {e}")

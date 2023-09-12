@@ -12,8 +12,6 @@ class SearchCallbackFactory(CallbackData, prefix="search", sep="_"):
 
 
 class KeyboardMovieCallBackFactory(CallbackData, prefix="movie", sep="~"):
-    title: str
-    release_date: date | None
     tmdb_id: int
 
 

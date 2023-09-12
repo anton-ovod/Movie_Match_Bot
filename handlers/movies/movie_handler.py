@@ -43,9 +43,10 @@ async def movies_first_page_callback_handler(query: CallbackQuery, callback_data
 @router.callback_query(KeyboardMovieCallBackFactory.filter())
 async def movie_callback_handler_first_page(query: CallbackQuery, callback_data: KeyboardMovieCallBackFactory):
     logging.info(f"Callback query: {query.data}")
-    movie = Movie(title=callback_data.title, release_date=callback_data.release_date, tmdb_id=callback_data.tmdb_id)
+    movie = Movie(tmdb_id=callback_data.tmdb_id)
     await get_movie_details_tmdb(movie)
-    await get_movie_details_omdb(movie)
+    if movie.imdb_id:
+        await get_movie_details_omdb(movie)
     logging.info(f"Movie: {movie.model_dump_json(indent=4)}")
     await query.answer(f" 🔍  {movie.pretty_title}")
 #
