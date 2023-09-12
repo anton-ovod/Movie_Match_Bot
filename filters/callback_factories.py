@@ -1,5 +1,7 @@
 from aiogram.filters.callback_data import CallbackData
 
+from datetime import date
+
 
 class BackCallbackFactory(CallbackData, prefix="back", sep="_"):
     to: str
@@ -9,7 +11,9 @@ class SearchCallbackFactory(CallbackData, prefix="search", sep="_"):
     type: str = None
 
 
-class KeyboardMovieCallBackFactory(CallbackData, prefix="movie", sep=":"):
+class KeyboardMovieCallBackFactory(CallbackData, prefix="movie", sep="~"):
+    title: str
+    release_date: date | None
     tmdb_id: int
 
 

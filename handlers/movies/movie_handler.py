@@ -38,27 +38,13 @@ async def movies_first_page_callback_handler(query: CallbackQuery, callback_data
                                   reply_markup=get_page_of_movies_keyboard(movies, page_number=callback_data.page))
     await query.answer(f" 🔍 Page {callback_data.page}")
 
-# @router.callback_query(PageCallbackFactory.filter(F.type == "movie" and F.page == 2))
-# async def movies_second_page_callback_handler(query: CallbackQuery, state: FSMContext):
-#     await state.set_state(SearchStates.SecondPage)
-#     logging.info(f"Callback query: {query.data} , State: {await state.get_state()}")
-#     search_query = await state.get_data()
-#     movies, number_of_movies = await get_list_of_movies_for_keyboard(search_query.get("search_query"))
-#     await query.message.edit_text(f" 🔍  <b>Results » {search_query.get('search_query')}</b>\n",
-#                                   reply_markup=get_second_page_movies_keyboard(movies, number_of_movies))
-#
-#
-# @router.callback_query(KeyboardMovieCallBackFactory.filter())
-# async def movie_callback_handler_first_page(query: CallbackQuery, callback_data: KeyboardMovieCallBackFactory,
-#                                             state: FSMContext):
-#     logging.info(f"Callback query: {callback_data.tmdb_id}")
-#     movie = Movie(tmdb_id=int(callback_data.tmdb_id))
-#     await movie.get_movie_details()
-#     await query.message.edit_text(text=movie.create_movie_message(),
-#                                   reply_markup=get_movie_buttons(
-#                                       page=1 if await state.get_state() == SearchStates.FirstPage else 2,
-#                                       movie_data=movie))
-#     await query.answer(" 🎬  Movie")
+
+@router.callback_query(KeyboardMovieCallBackFactory.filter())
+async def movie_callback_handler_first_page(query: CallbackQuery, callback_data: KeyboardMovieCallBackFactory):
+    logging.info(f"Callback query: {query.data}")
+    movie = Movie(title=callback_data.title, release_date=callback_data.release_date, tmdb_id=callback_data.tmdb_id)
+    logging.info(f"Movie: {movie}")
+    await query.answer(f" 🔍  {movie.pretty_title}")
 #
 #
 # @router.callback_query(MovieCallBackFactory.filter(F.feature == "watch"))

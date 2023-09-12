@@ -28,7 +28,9 @@ def get_page_of_movies_keyboard(movies: List[KeyboardMovie], page_number: int):
     if movies_number - (page_number * 10) >= 10:
         for movie in movies[(page_number - 1) * 10: page_number * 10]:
             movies_builder.button(text=movie.pretty_title,
-                                  callback_data=KeyboardMovieCallBackFactory(tmdb_id=movie.tmdb_id))
+                                  callback_data=KeyboardMovieCallBackFactory(title=movie.title,
+                                                                                release_date=movie.release_date,
+                                                                                tmdb_id=movie.tmdb_id))
         if page_number == 1:
             nav_builder.button(text=" ⬅️ Back", callback_data=BackCallbackFactory(to="search:movie"))
         else:
@@ -43,7 +45,9 @@ def get_page_of_movies_keyboard(movies: List[KeyboardMovie], page_number: int):
     elif 10 > movies_number - (page_number * 10) >= 0:
         for movie in movies[(page_number - 1) * 10:]:
             movies_builder.button(text=movie.pretty_title,
-                                  callback_data=KeyboardMovieCallBackFactory(tmdb_id=movie.tmdb_id))
+                                  callback_data=KeyboardMovieCallBackFactory(title=movie.title,
+                                                                             release_date=movie.release_date,
+                                                                             tmdb_id=movie.tmdb_id))
         if page_number == 1:
             nav_builder.button(text=" ⬅️ Back", callback_data=BackCallbackFactory(to="search:movie"))
         else:
