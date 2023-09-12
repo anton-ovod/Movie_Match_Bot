@@ -6,7 +6,7 @@ from datetime import date
 class KeyboardMovie(BaseModel):
     # Data is getting from tmdb api
     title: str
-    release_date: date | None
+    release_date: date | None = None
     tmdb_id: PositiveInt
 
     @property
@@ -16,7 +16,7 @@ class KeyboardMovie(BaseModel):
 
 class Rating(BaseModel):
     source: str
-    value: int
+    value: int | float
 
 
 class Actor(BaseModel):

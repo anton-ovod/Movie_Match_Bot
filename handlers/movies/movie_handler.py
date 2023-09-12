@@ -10,6 +10,7 @@ from filters.callback_factories import PageCallbackFactory, KeyboardMovieCallBac
 
 from handlers.search import SearchStates
 from utils.imdb_api import get_movies_by_title, get_movie_details_tmdb
+from utils.omdb_api import get_movie_details_omdb
 from models.movie import Movie
 
 router = Router()
@@ -44,6 +45,7 @@ async def movie_callback_handler_first_page(query: CallbackQuery, callback_data:
     logging.info(f"Callback query: {query.data}")
     movie = Movie(title=callback_data.title, release_date=callback_data.release_date, tmdb_id=callback_data.tmdb_id)
     await get_movie_details_tmdb(movie)
+    await get_movie_details_omdb(movie)
     logging.info(f"Movie: {movie.model_dump_json(indent=4)}")
     await query.answer(f" 🔍  {movie.pretty_title}")
 #
