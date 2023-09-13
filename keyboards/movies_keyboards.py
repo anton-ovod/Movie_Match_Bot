@@ -28,7 +28,7 @@ def get_page_of_movies_keyboard(movies: List[KeyboardMovie], page_number: int):
     if movies_number - (page_number * 10) >= 10:
         for movie in movies[(page_number - 1) * 10: page_number * 10]:
             movies_builder.button(text=movie.pretty_title,
-                                  callback_data=KeyboardMovieCallBackFactory(tmdb_id=movie.tmdb_id))
+                                  callback_data=KeyboardMovieCallBackFactory(tmdb_id=movie.tmdb_id, page=page_number))
         if page_number == 1:
             nav_builder.button(text=" ⬅️ Back", callback_data=BackCallbackFactory(to="search:movie"))
         else:
@@ -43,7 +43,7 @@ def get_page_of_movies_keyboard(movies: List[KeyboardMovie], page_number: int):
     elif 10 > movies_number - (page_number * 10) >= 0:
         for movie in movies[(page_number - 1) * 10:]:
             movies_builder.button(text=movie.pretty_title,
-                                  callback_data=KeyboardMovieCallBackFactory(tmdb_id=movie.tmdb_id))
+                                  callback_data=KeyboardMovieCallBackFactory(tmdb_id=movie.tmdb_id, page=page_number))
         if page_number == 1:
             nav_builder.button(text=" ⬅️ Back", callback_data=BackCallbackFactory(to="search:movie"))
         else:
@@ -55,8 +55,8 @@ def get_page_of_movies_keyboard(movies: List[KeyboardMovie], page_number: int):
     else:
         for movie in movies[(page_number - 1) * 10:]:
             movies_builder.button(text=movie.pretty_title,
-                                  callback_data=KeyboardMovieCallBackFactory(tmdb_id=movie.tmdb_id))
-        nav_builder.button(text= "⬅️ Back",
+                                  callback_data=KeyboardMovieCallBackFactory(tmdb_id=movie.tmdb_id, page=page_number))
+        nav_builder.button(text="⬅️ Back",
                            callback_data=BackCallbackFactory(to="search:movie"))
         nav_builder.button(text=" 🏠 Home", callback_data=BackCallbackFactory(to="home"))
         nav_builder.button(text=" 🚪 Close", callback_data=BackCallbackFactory(to="close"))
@@ -81,14 +81,11 @@ def get_movie_buttons(page: int, movie_data: Movie) -> InlineKeyboardMarkup:
 
     if movie_data.trailer_url:
         movie_buttons.button(text=" 🎞 Trailer", url=movie_data.trailer_url)
-    else:
-        movie_buttons.button(text=" 🎞 Trailer",
-                             url="https://www.youtube.com/results?search_query=trailer " + movie_data.title_year)
 
     movie_buttons.button(text=" 🗂 Recommendations", callback_data=MovieCallBackFactory(feature="recommendations"))
     movie_buttons.button(text=" 📼 Where to watch", callback_data=MovieCallBackFactory(feature="watch"))
     movie_buttons.button(text=" ⬅️ Back", callback_data=PageCallbackFactory(type="movie", page=page))
-    movie_buttons.button(text=" 🤲 Share", switch_inline_query=movie_data.title_year)
+    movie_buttons.button(text=" 🤲 Share", switch_inline_query=movie_data.pretty_title)
     movie_buttons.adjust(2)
     return movie_buttons.as_markup()
 

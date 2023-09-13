@@ -3,7 +3,7 @@ import logging
 
 from config_reader import config
 
-from models.movie import Movie, Actor, Rating
+from models.movie import Movie, Rating
 
 
 async def get_movie_details_omdb(movie: Movie) -> None:
@@ -19,6 +19,8 @@ async def get_movie_details_omdb(movie: Movie) -> None:
                 movie_detail = await response.json()
                 if countries := movie_detail.get("Country"):
                     movie.countries = countries.split(", ")
+                if age_categories := movie_detail.get("Rated"):
+                    movie.age_categories = age_categories
                 if awards := movie_detail.get("Awards"):
                     if awards != "N/A":
                         movie.awards = awards

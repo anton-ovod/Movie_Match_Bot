@@ -13,6 +13,7 @@ class SearchCallbackFactory(CallbackData, prefix="search", sep="_"):
 
 class KeyboardMovieCallBackFactory(CallbackData, prefix="movie", sep="~"):
     tmdb_id: int
+    page: int
 
 
 class MovieCallBackFactory(CallbackData, prefix="movie", sep=":"):

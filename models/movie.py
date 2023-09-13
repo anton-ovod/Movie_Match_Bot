@@ -56,6 +56,7 @@ class Movie(KeyboardMovie):
     ratings: List[Rating] = []
     cast: List[Actor] = []
     awards: str = None
+    age_categories: str = None
     countries: List[str] = []
 
     # Self made links
@@ -117,3 +118,71 @@ class Movie(KeyboardMovie):
                     title = title.replace("--", "-")
                     self.metacritic_url = (f"{config.search_meta_url.get_secret_value()}"
                                            f"{title.lower()}")
+
+    @property
+    def message(self) -> str:
+        self.calculate_average_rating()
+        self.create_links()
+        message = ""
+
+        if self.poster_url:
+            message += f"<a href='{self.poster_url}'><b>{self.pretty_title}</b></a>\n"
+        elif self.imdb_url:
+            message += f"<a href='{self.imdb_url}'><b>{self.pretty_title}</b></a>\n"
+        else:
+            message += f"<a href='{self.tmdb_url}'><b>{self.pretty_title}</b></a>\n"
+        if self.tagline:
+            message += f"<i>{self.tagline}</i>\n"
+
+        message += "\n"
+
+        if self.genres:
+            for genre in self.genres:
+                message += f"#{genre} "
+            message += "\n"
+        if self.overview:
+            message += f"{self.overview}\n"
+
+        message += "\n"
+
+        if ratings := self.ratings:
+            if len(ratings) == 1:
+                message += f"Average rating: <b>{ratings[0].value}</b>\n"
+            else:
+                average_star_rating = round((ratings[-1].value / 20) * 2) / 2
+                message += f"<b>Average rating: {rating_characters[average_star_rating]} • {ratings[-1].value}</b>\n"
+                for rating in ratings[:-1]:
+                    if rating.source == "TMDb":
+                        message += f"<a href='{self.tmdb_url}'>TMDb</a>: {rating.value}\n"
+                    if rating.source == "IMDB":
+                        message += f"<a href='{self.imdb_url}'>IMDb</a>: {rating.value}\n"
+                    if rating.source == "Rotten Tomatoes":
+                        message += f"<a href='{self.rotten_tomatoes_url}'>Rotten Tomatoes</a>: {rating.value}\n"
+                    if rating.source == "Metacritic":
+                        message += f"<a href='{self.metacritic_url}'>Metacritic</a>: {rating.value}\n"
+
+        message += "\n"
+
+        if self.awards:
+            message += f"<b>Awards:</b> {self.awards}.\n\n"
+        if self.cast:
+            message += f"<b>Director:</b> <a href='{self.cast[-1].profile_url}'>{self.cast[-1].name}</a>\n\n"
+            message += "<b>Actors:</b>\n"
+            for actor in self.cast[:-1]:
+                message += f"<a href='{actor.profile_url}'><i>{actor.name}</i></a> as {actor.character}\n"
+
+        bottom_line = ""
+        if self.age_categories:
+            bottom_line += f"{self.age_categories}"
+        if self.runtime:
+            bottom_line += f" | {self.runtime} min"
+        if self.countries:
+            bottom_line += f" | {', '.join(self.countries)}"
+
+        message += f"\n{bottom_line}"
+
+        return message
+
+
+
+

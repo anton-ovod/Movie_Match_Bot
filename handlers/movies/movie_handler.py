@@ -4,7 +4,7 @@ from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
-from keyboards.movies_keyboards import (get_page_of_movies_keyboard, get_back_button)
+from keyboards.movies_keyboards import (get_page_of_movies_keyboard, get_back_button, get_movie_buttons)
 from filters.callback_factories import PageCallbackFactory, KeyboardMovieCallBackFactory, MovieCallBackFactory
 
 from handlers.search import SearchStates
@@ -46,9 +46,10 @@ async def movie_callback_handler_first_page(query: CallbackQuery, callback_data:
     await get_movie_details_tmdb(movie)
     if movie.imdb_id:
         await get_movie_details_omdb(movie)
-    movie.calculate_average_rating()
-    movie.create_links()
+
     logging.info(f"Movie: {movie.model_dump_json(indent=4)}")
+    await query.message.edit_text(movie.message, parse_mode="HTML",
+                                  reply_markup=get_movie_buttons(movie_data=movie, page=callback_data.page))
     await query.answer(f" 🔍  {movie.pretty_title}")
 #
 #
