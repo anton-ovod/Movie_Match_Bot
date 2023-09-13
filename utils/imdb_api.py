@@ -94,8 +94,6 @@ async def get_movie_details_tmdb(movie: Movie) -> None:
                     movie.homepage = homepage
                 if tmdb_rating := movie_detail.get("vote_average"):
                     movie.ratings.append(Rating(source="TMDb", value=int(tmdb_rating) * 10))
-                else:
-                    movie.ratings.append(Rating(source="TMDb", value=0))
 
     except Exception as e:
         logging.error(f"Error while getting movie details(TMDB): {e}")

@@ -1,4 +1,3 @@
-import json
 import logging
 
 from aiogram import Router, F
@@ -47,6 +46,8 @@ async def movie_callback_handler_first_page(query: CallbackQuery, callback_data:
     await get_movie_details_tmdb(movie)
     if movie.imdb_id:
         await get_movie_details_omdb(movie)
+    movie.calculate_average_rating()
+    movie.create_links()
     logging.info(f"Movie: {movie.model_dump_json(indent=4)}")
     await query.answer(f" 🔍  {movie.pretty_title}")
 #
