@@ -66,6 +66,9 @@ async def get_movie_details_tmdb(movie: Movie) -> None:
                         if video.get("type") == "Trailer":
                             movie.trailer_url = f'{config.base_video_url.get_secret_value()}{video.get("key")}'
                             break
+                    else:
+                        movie.trailer_url = (f'{config.youtube_search_url.get_secret_value()}trailer'
+                                             f'{movie.pretty_title.split(" (")[0].replace(" ", "+")}')
                 else:
                     movie.trailer_url = (f'{config.youtube_search_url.get_secret_value()}trailer'
                                          f'{movie.pretty_title.split(" (")[0].replace(" ", "+")}')
@@ -79,6 +82,14 @@ async def get_movie_details_tmdb(movie: Movie) -> None:
                                                 character=actor.get("character"),
                                                 profile_url=f'{config.person_base_url.get_secret_value()}'
                                                             f'{actor.get("id")}'))
+                if crew := movie_detail.get("credits").get("crew"):
+                    for crew_member in crew:
+                        if crew_member.get("job") == "Director":
+                            movie.cast.append(Actor(name=crew_member.get("name"),
+                                                    character="Director",
+                                                    profile_url=f'{config.person_base_url.get_secret_value()}'
+                                                                f'{crew_member.get("id")}'))
+                            break
                 if homepage := movie_detail.get("homepage"):
                     movie.homepage = homepage
                 if tmdb_rating := movie_detail.get("vote_average"):

@@ -17,8 +17,6 @@ async def get_movie_details_omdb(movie: Movie) -> None:
             }
             async with session.get(movie_details_url, params=params) as response:
                 movie_detail = await response.json()
-                if director := movie_detail.get("Director"):
-                    movie.cast.append(Actor(name=director, character="Director", profile_url=""))
                 if countries := movie_detail.get("Country"):
                     movie.countries = countries.split(", ")
                 if awards := movie_detail.get("Awards"):
