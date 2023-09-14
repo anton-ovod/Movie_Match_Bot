@@ -18,6 +18,7 @@ class KeyboardMovieCallBackFactory(CallbackData, prefix="movie", sep="~"):
 
 class MovieCallBackFactory(CallbackData, prefix="movie", sep=":"):
     feature: str
+    tmdb_id: int
 
 
 class PageCallbackFactory(CallbackData, prefix="page", sep=":"):

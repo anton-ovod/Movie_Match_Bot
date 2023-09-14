@@ -54,8 +54,9 @@ async def movie_callback_handler_first_page(query: CallbackQuery, callback_data:
 
 
 @router.callback_query(MovieCallBackFactory.filter(F.feature == "watch"))
-async def providers_callback_handler(query: CallbackQuery):
-    await query.answer(text="Not implemented yet", show_alert=True)
+async def providers_callback_handler(query: CallbackQuery, callback_data: MovieCallBackFactory):
+
+    await query.answer(text="🗂 Recommendations")
 
 
 # @router.callback_query(MovieCallBackFactory.filter(F.feature == "recommendations"))

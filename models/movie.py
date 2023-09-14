@@ -167,6 +167,7 @@ class Movie(KeyboardMovie):
             message += f"<b>Awards:</b> {self.awards}.\n\n"
         if self.cast:
             message += f"<b>Director:</b> <a href='{self.cast[-1].profile_url}'>{self.cast[-1].name}</a>\n\n"
+        if self.cast[:-1]:
             message += "<b>Actors:</b>\n"
             for actor in self.cast[:-1]:
                 message += f"<a href='{actor.profile_url}'><i>{actor.name}</i></a> as {actor.character}\n"
