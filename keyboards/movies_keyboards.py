@@ -74,8 +74,6 @@ def get_page_of_movies_keyboard(movies: List[KeyboardMovie], page_number: int,
                                                                              feature=keyboard_movie_feature))
         if type_of_feature == "main":
             nav_builder.button(text=" ⬅️ Back", callback_data=BackCallbackFactory(to=back_callback_query))
-        elif type_of_feature == "recommendations":
-            nav_builder.button(text=" 🚪 Close", callback_data=BackCallbackFactory(to=back_callback_query))
 
         nav_builder.button(text=" 🏠 Home", callback_data=BackCallbackFactory(to="home"))
         nav_builder.button(text=" 🚪 Close", callback_data=BackCallbackFactory(to="close"))
