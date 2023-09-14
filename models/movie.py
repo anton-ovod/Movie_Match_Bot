@@ -138,7 +138,7 @@ class Movie(KeyboardMovie):
 
         if self.genres:
             for genre in self.genres:
-                message += f"#{genre} "
+                message += f"#{genre.replace(' ', '')} "
             message += "\n"
         if self.overview:
             message += f"{self.overview}\n"
@@ -174,10 +174,12 @@ class Movie(KeyboardMovie):
         bottom_line = ""
         if self.age_categories:
             bottom_line += f"{self.age_categories}"
+            bottom_line += " | "
         if self.runtime:
-            bottom_line += f" | {self.runtime} min"
+            bottom_line += f"{self.runtime} min"
         if self.countries:
-            bottom_line += f" | {', '.join(self.countries)}"
+            bottom_line += " | " if self.runtime else ""
+            bottom_line += f"{', '.join(self.countries)}"
 
         message += f"\n{bottom_line}"
 

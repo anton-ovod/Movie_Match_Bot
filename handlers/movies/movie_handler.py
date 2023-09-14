@@ -24,7 +24,7 @@ async def search_movie_title_handler(message: Message, state: FSMContext):
         await message.answer(f" 🔍  <b>Results » {message.text}</b>\n",
                              reply_markup=get_page_of_movies_keyboard(movies, page_number=1))
     else:
-        await message.answer("No movies found, please try again", reply_markup=get_back_button())
+        await message.answer(" ‼️ No movies found, please try again ‼️ ", reply_markup=get_back_button())
         await state.clear()
 
 
@@ -51,13 +51,13 @@ async def movie_callback_handler_first_page(query: CallbackQuery, callback_data:
     await query.message.edit_text(movie.message, parse_mode="HTML",
                                   reply_markup=get_movie_buttons(movie_data=movie, page=callback_data.page))
     await query.answer(f" 🔍  {movie.pretty_title}")
-#
-#
-# @router.callback_query(MovieCallBackFactory.filter(F.feature == "watch"))
-# async def providers_callback_handler(query: CallbackQuery):
-#     await query.answer(text="Not implemented yet", show_alert=True)
-#
-#
+
+
+@router.callback_query(MovieCallBackFactory.filter(F.feature == "watch"))
+async def providers_callback_handler(query: CallbackQuery):
+    await query.answer(text="Not implemented yet", show_alert=True)
+
+
 # @router.callback_query(MovieCallBackFactory.filter(F.feature == "recommendations"))
 # async def providers_callback_handler(query: CallbackQuery):
 #     await query.answer(text="Not implemented yet", show_alert=True)

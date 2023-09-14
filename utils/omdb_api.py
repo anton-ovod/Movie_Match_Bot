@@ -20,7 +20,8 @@ async def get_movie_details_omdb(movie: Movie) -> None:
                 if countries := movie_detail.get("Country"):
                     movie.countries = countries.split(", ")
                 if age_categories := movie_detail.get("Rated"):
-                    movie.age_categories = age_categories
+                    if age_categories != "N/A":
+                        movie.age_categories = age_categories
                 if awards := movie_detail.get("Awards"):
                     if awards != "N/A":
                         movie.awards = awards
