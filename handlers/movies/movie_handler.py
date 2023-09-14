@@ -8,7 +8,7 @@ from keyboards.movies_keyboards import (get_page_of_movies_keyboard, get_back_bu
 from filters.callback_factories import PageCallbackFactory, KeyboardMovieCallBackFactory, MovieCallBackFactory
 
 from handlers.search import SearchStates
-from utils.imdb_api import get_movies_by_title, get_movie_details_tmdb
+from utils.imdb_api import (get_movies_by_title, get_movie_details_tmdb, get_recommendations_by_id)
 from utils.omdb_api import get_movie_details_omdb
 from models.movie import Movie
 
@@ -28,7 +28,7 @@ async def search_movie_title_handler(message: Message, state: FSMContext):
         await state.clear()
 
 
-@router.callback_query(PageCallbackFactory.filter(F.type == "movie"))
+@router.callback_query(PageCallbackFactory.filter(F.type == "movie" and F.feature == "main"))
 async def movies_first_page_callback_handler(query: CallbackQuery, callback_data: PageCallbackFactory,
                                              state: FSMContext):
     state_data = await state.get_data()
@@ -39,9 +39,27 @@ async def movies_first_page_callback_handler(query: CallbackQuery, callback_data
     await query.answer(f" 🔍 Page {callback_data.page}")
 
 
+@router.callback_query(PageCallbackFactory.filter(F.type == "movie" and F.feature == "recommendations"))
+async def movies_first_page_callback_handler(query: CallbackQuery, callback_data: PageCallbackFactory,
+                                             state: FSMContext):
+    state_data = await state.get_data()
+    recommendations = state_data.get("recommendations")
+    search_query = state_data.get("search_query")
+    if recommendations:
+        await query.message.edit_text(f" 🔍  <b>Recommendations » {search_query}</b>\n",
+                                      reply_markup=get_page_of_movies_keyboard(recommendations,
+                                                                               page_number=callback_data.page,
+                                                                               type_of_feature="recommendations"))
+    else:
+        await query.message.answer(" ‼️ No recommendations found ‼️ ", reply_markup=get_back_button())
+    await query.answer(f" 🔍 Page {callback_data.page}")
+
+
 @router.callback_query(KeyboardMovieCallBackFactory.filter())
-async def movie_callback_handler_first_page(query: CallbackQuery, callback_data: KeyboardMovieCallBackFactory):
+async def movie_callback_handler_first_page(query: CallbackQuery, callback_data: KeyboardMovieCallBackFactory,
+                                            state: FSMContext):
     logging.info(f"Callback query: {query.data}")
+    await state.set_state(SearchStates.movie_overview)
     movie = Movie(tmdb_id=callback_data.tmdb_id)
     await get_movie_details_tmdb(movie)
     if movie.imdb_id:
@@ -49,16 +67,24 @@ async def movie_callback_handler_first_page(query: CallbackQuery, callback_data:
 
     logging.info(f"Movie: {movie.model_dump_json(indent=4)}")
     await query.message.edit_text(movie.message, parse_mode="HTML",
-                                  reply_markup=get_movie_buttons(movie_data=movie, page=callback_data.page))
+                                  reply_markup=get_movie_buttons(movie_data=movie, page=callback_data.page,
+                                                                 type_of_feature=callback_data.feature))
     await query.answer(f" 🔍  {movie.pretty_title}")
 
 
-@router.callback_query(MovieCallBackFactory.filter(F.feature == "watch"))
-async def providers_callback_handler(query: CallbackQuery, callback_data: MovieCallBackFactory):
+@router.callback_query(MovieCallBackFactory.filter(F.feature == "recommendations"))
+async def providers_callback_handler(query: CallbackQuery, callback_data: MovieCallBackFactory, state: FSMContext):
+    recommendations = await get_recommendations_by_id(callback_data.tmdb_id)
+    logging.info(f"Callback query: {query.data}")
+    await state.set_state(SearchStates.movie_pagination)
+    if recommendations:
+        state_data = await state.get_data()
+        await state.set_data({"movies": state_data.get("movies"),
+                              "search_query": state_data.get("search_query"),
+                              "recommendations": recommendations})
+        await query.message.answer(f" 🔍  <b>Recommendations » {state_data.get('search_query')}</b>\n",
+                                   reply_markup=get_page_of_movies_keyboard(recommendations, page_number=1,
+                                                                            type_of_feature="recommendations"))
 
     await query.answer(text="🗂 Recommendations")
 
-
-# @router.callback_query(MovieCallBackFactory.filter(F.feature == "recommendations"))
-# async def providers_callback_handler(query: CallbackQuery):
-#     await query.answer(text="Not implemented yet", show_alert=True)

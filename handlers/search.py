@@ -16,6 +16,7 @@ router = Router()
 class SearchStates(StatesGroup):
     waiting_for_movie_title = State()
     movie_pagination = State()
+    movie_overview = State()
 
 
 @router.callback_query(F.data == "search")

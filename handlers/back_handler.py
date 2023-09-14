@@ -15,7 +15,7 @@ router = Router()
 
 
 @router.callback_query(BackCallbackFactory.filter(F.to == "home"))
-async def back_home_callback_handler(query: CallbackQuery):
+async def back_home_callback_handler(query: CallbackQuery, state: FSMContext):
     logging.info(f"Callback query: {query.data}")
     await query.message.edit_text("<b>Welcome to MovieMatcherBot!</b> 🎬🤖\n\n"
                                   "I'm here to help you find your perfect movie match.\n"
@@ -23,6 +23,7 @@ async def back_home_callback_handler(query: CallbackQuery):
                                   "romances, I've got you covered."
                                   "Just let me know your preferences, and I'll suggest the best movies for you.\n\n",
                                   reply_markup=get_main_keyboard())
+    await state.clear()
     await query.answer(" 🏠 Home")
 
 
@@ -42,12 +43,12 @@ async def back_search_callback_handler(query: CallbackQuery, state: FSMContext):
                                   "utmost to"
                                   "provide you with a list of matching results\n\n"
                                   "<b>For instance: The Matrix</b>", reply_markup=get_only_back_button())
+    await state.clear()
     await state.set_state(SearchStates.waiting_for_movie_title)
     await query.answer("Movies search")
 
 
 @router.callback_query(BackCallbackFactory.filter(F.to == "close"))
-async def back_close_callback_handler(query: CallbackQuery, state: FSMContext):
-    await state.clear()
+async def back_close_callback_handler(query: CallbackQuery):
     await query.message.delete()
     await query.answer("Closing... 🚪")
