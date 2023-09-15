@@ -29,6 +29,7 @@ def get_page_of_movies_keyboard(movies: List[KeyboardMovie], page_number: int,
     back_callback_query = "search:movie" if type_of_feature == "main" else "close"
     page_callback_feature = "main" if type_of_feature == "main" else "recommendations"
     keyboard_movie_feature = f"{type_of_feature}"
+
     if movies_number - (page_number * 10) >= 10:
         for movie in movies[(page_number - 1) * 10: page_number * 10]:
             movies_builder.button(text=movie.pretty_title,
@@ -39,11 +40,13 @@ def get_page_of_movies_keyboard(movies: List[KeyboardMovie], page_number: int,
                 nav_builder.button(text=" ⬅️ Back", callback_data=BackCallbackFactory(to=back_callback_query))
             elif type_of_feature == "recommendations":
                 nav_builder.button(text=" 🚪 Close", callback_data=BackCallbackFactory(to=back_callback_query))
+
         else:
             nav_builder.button(text=f"f{keys_emojis[page_number - 1]}",
                                callback_data=PageCallbackFactory(type="movie", page=page_number - 1))
 
-        nav_builder.button(text=" 🏠 Home", callback_data=BackCallbackFactory(to="home"))
+        if type_of_feature == "main":
+            nav_builder.button(text=" 🏠 Home", callback_data=BackCallbackFactory(to="home"))
 
         nav_builder.button(text=f"{keys_emojis[page_number + 1]}",
                            callback_data=PageCallbackFactory(type="movie", page=page_number + 1,
@@ -65,8 +68,9 @@ def get_page_of_movies_keyboard(movies: List[KeyboardMovie], page_number: int,
                                callback_data=PageCallbackFactory(type="movie", page=page_number - 1,
                                                                  feature=page_callback_feature))
 
-        nav_builder.button(text=" 🏠 Home", callback_data=BackCallbackFactory(to="home"))
-        nav_builder.button(text=" 🚪 Close", callback_data=BackCallbackFactory(to="close"))
+            if type_of_feature == "main":
+                nav_builder.button(text=" 🏠 Home", callback_data=BackCallbackFactory(to="home"))
+            nav_builder.button(text=" 🚪 Close", callback_data=BackCallbackFactory(to="close"))
     else:
         for movie in movies[(page_number - 1) * 10:]:
             movies_builder.button(text=movie.pretty_title,
@@ -74,8 +78,8 @@ def get_page_of_movies_keyboard(movies: List[KeyboardMovie], page_number: int,
                                                                              feature=keyboard_movie_feature))
         if type_of_feature == "main":
             nav_builder.button(text=" ⬅️ Back", callback_data=BackCallbackFactory(to=back_callback_query))
+            nav_builder.button(text=" 🏠 Home", callback_data=BackCallbackFactory(to="home"))
 
-        nav_builder.button(text=" 🏠 Home", callback_data=BackCallbackFactory(to="home"))
         nav_builder.button(text=" 🚪 Close", callback_data=BackCallbackFactory(to="close"))
 
     movies_builder.adjust(1)
