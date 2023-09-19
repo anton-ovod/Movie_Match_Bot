@@ -94,26 +94,26 @@ def get_movie_buttons(page: int, movie_data: Movie, type_of_feature: str = "main
     feature_callback_query = f"{type_of_feature}"
 
     if movie_data.homepage:
-        movie_buttons.button(text=" 🏠 Homepage", url=movie_data.homepage)
+        movie_buttons.button(text="🏠 Homepage", url=movie_data.homepage)
     elif movie_data.imdb_url:
-        movie_buttons.button(text=" 🏠 Homepage", url=movie_data.imdb_url)
+        movie_buttons.button(text="🏠 Homepage", url=movie_data.imdb_url)
     else:
-        movie_buttons.button(text=" 🏠 Homepage", url=movie_data.tmdb_url)
+        movie_buttons.button(text="🏠 Homepage", url=movie_data.tmdb_url)
 
     if movie_data.trailer_url:
-        movie_buttons.button(text=" 🎞 Trailer", url=movie_data.trailer_url)
+        movie_buttons.button(text="🎞 Trailer", url=movie_data.trailer_url)
 
     if type_of_feature == "main":
-        movie_buttons.button(text=" 🗂 Recommendations", callback_data=MovieCallBackFactory(feature="recommendations",
-                                                                                           tmdb_id=movie_data.tmdb_id))
-    else:
-        movie_buttons.button(text=" 🌄 Poster", url=movie_data.poster_url)
-
-    movie_buttons.button(text=" 📼 Where to watch", callback_data=MovieCallBackFactory(feature="watch",
+        movie_buttons.button(text="🗂 Suggestions", callback_data=MovieCallBackFactory(feature="recommendations",
                                                                                       tmdb_id=movie_data.tmdb_id))
-    movie_buttons.button(text=" ⬅️ Back", callback_data=PageCallbackFactory(type="movie", page=page,
-                                                                            feature=feature_callback_query))
-    movie_buttons.button(text=" 🤲 Share", switch_inline_query=movie_data.pretty_title)
+    else:
+        movie_buttons.button(text="🌄 Poster", url=movie_data.poster_url)
+
+    movie_buttons.button(text="📽 Availability", callback_data=MovieCallBackFactory(feature="watch",
+                                                                                   tmdb_id=movie_data.tmdb_id))
+    movie_buttons.button(text="⬅️ Back", callback_data=PageCallbackFactory(type="movie", page=page,
+                                                                           feature=feature_callback_query))
+    movie_buttons.button(text="🤲 Share", switch_inline_query=movie_data.pretty_title)
     movie_buttons.adjust(2)
     return movie_buttons.as_markup()
 

@@ -6,12 +6,12 @@ from filters.callback_factories import BackCallbackFactory, SearchCallbackFactor
 
 def get_type_keyboard() -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardBuilder()
-    keyboard.button(text=" 🎬 Movie", callback_data=SearchCallbackFactory(type="movie"))
-    keyboard.button(text=" 📺 TV Show", callback_data=SearchCallbackFactory(type="tv"))
-    keyboard.button(text=" 👤 Person", callback_data=SearchCallbackFactory(type="person"))
-    keyboard.button(text=" ⬅️ Back", callback_data=BackCallbackFactory(to="home"))
+    keyboard.button(text="🎬 Movie", callback_data=SearchCallbackFactory(type="movie"))
+    keyboard.button(text="📺 Show", callback_data=SearchCallbackFactory(type="tv"))
+    keyboard.button(text="👤 Person", callback_data=SearchCallbackFactory(type="person"))
+    keyboard.button(text="⬅️ Back", callback_data=BackCallbackFactory(to="home"))
 
-    keyboard.adjust(3, 1)
+    keyboard.adjust(3,1)
     return keyboard.as_markup()
 
 

@@ -23,7 +23,7 @@ class SearchStates(StatesGroup):
 async def search_callback_handler(query: CallbackQuery):
     logging.info(f"Callback query: {query.data}")
     await query.message.edit_text(" 🔍  Search\n\n"
-                                  "Choose what you want to search for:\n",
+                                  "Choose what you want to search for: ",
                                   reply_markup=get_type_keyboard())
     await query.answer(" 🔍  Search")
 
