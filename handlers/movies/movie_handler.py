@@ -90,3 +90,15 @@ async def providers_callback_handler(query: CallbackQuery, callback_data: MovieC
         await query.message.answer(" ‼️ No recommendations found ‼️ ",
                                    reply_markup=get_back_button(type_of_feature="recommendations"))
         await query.answer(" ‼️ No recommendations found ‼️ ")
+
+
+@router.callback_query(MovieCallBackFactory.filter(F.feature == "availability"))
+async def availability_callback_handler(query: CallbackQuery, callback_data: MovieCallBackFactory, state: FSMContext):
+    logging.info(f"Callback query: {query.data}")
+    await query.answer(" 🚧  This feature is under construction", show_alert=True)
+
+
+@router.callback_query(MovieCallBackFactory.filter(F.feature == "share"))
+async def availability_callback_handler(query: CallbackQuery, callback_data: MovieCallBackFactory, state: FSMContext):
+    logging.info(f"Callback query: {query.data}")
+    await query.answer(" 🚧  This feature is under construction", show_alert=True)

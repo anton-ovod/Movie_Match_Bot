@@ -109,11 +109,12 @@ def get_movie_buttons(page: int, movie_data: Movie, type_of_feature: str = "main
     else:
         movie_buttons.button(text="🌄 Poster", url=movie_data.poster_url)
 
-    movie_buttons.button(text="📽 Availability", callback_data=MovieCallBackFactory(feature="watch",
+    movie_buttons.button(text="📽 Availability", callback_data=MovieCallBackFactory(feature="availability",
                                                                                    tmdb_id=movie_data.tmdb_id))
     movie_buttons.button(text="⬅️ Back", callback_data=PageCallbackFactory(type="movie", page=page,
                                                                            feature=feature_callback_query))
-    movie_buttons.button(text="🤲 Share", switch_inline_query=movie_data.pretty_title)
+    movie_buttons.button(text="🤲 Share", callback_data=MovieCallBackFactory(feature="share",
+                                                                            tmdb_id=movie_data.tmdb_id))
     movie_buttons.adjust(2)
     return movie_buttons.as_markup()
 
