@@ -111,7 +111,11 @@ async def get_recommendations_by_id(imdb_id: int) -> List[KeyboardMovie]:
             }
             async with session.get(movie_recommendations_url, params=params) as response:
                 data = await response.json()
+<<<<<<< HEAD
                 results = data.get("results")
+=======
+                results = sorted(data.get("results"), key=lambda x: x.get("popularity"), reverse=True)
+>>>>>>> 9ee3052dfc87f6751e02beaf1582fd256b1dc34a
                 recommendations = []
                 for result in results:
                     title = result.get("title")
