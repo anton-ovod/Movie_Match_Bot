@@ -1,4 +1,5 @@
 import logging
+import asyncio
 import sys
 
 from redis.asyncio.client import Redis
@@ -28,5 +29,11 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == '__main__':
-    import asyncio
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        pass
+    except Exception as e:
+        logging.critical(e)
+
+
