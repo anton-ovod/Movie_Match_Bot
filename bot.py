@@ -10,6 +10,7 @@ from aiogram.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
 from aiogram_dialog import setup_dialogs
 
 from handlers.home_dialog import home_router
+from handlers.searching.movie_dialog import movie_search_router
 
 from config_reader import config
 
@@ -23,7 +24,7 @@ async def main():
     bot = Bot(token=config.bot_token.get_secret_value())
     dp = Dispatcher(storage=storage)
 
-    dp.include_router(home_router)
+    dp.include_routers(movie_search_router, home_router)
 
     setup_dialogs(dp)
     await dp.start_polling(bot)

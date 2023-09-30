@@ -1,6 +1,6 @@
 import logging
 
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message
 
@@ -15,7 +15,7 @@ home_router.include_router(main_dialog)
 @home_router.message(Command("start"))
 async def start_command_handler(message: Message, dialog_manager: DialogManager):
     logging.info("Start command received")
-    await message.delete()
+    # await message.delete()
     await dialog_manager.start(HomeDialogSG.home, mode=StartMode.RESET_STACK,
                                show_mode=ShowMode.SEND)
 
@@ -42,3 +42,10 @@ async def settings_command_handler(message: Message, dialog_manager: DialogManag
     await message.delete()
     await dialog_manager.start(HomeDialogSG.settings, mode=StartMode.RESET_STACK,
                                show_mode=ShowMode.EDIT)
+
+
+@home_router.message()
+async def message_handler(message: Message):
+    logging.info(f"Message from '{message.from_user.username}' received: '{message.text}'")
+    await message.delete()
+
