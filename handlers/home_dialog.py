@@ -15,7 +15,6 @@ home_router.include_router(main_dialog)
 @home_router.message(Command("start"))
 async def start_command_handler(message: Message, dialog_manager: DialogManager):
     logging.info("Start command received")
-    # await message.delete()
     await dialog_manager.start(HomeDialogSG.home, mode=StartMode.RESET_STACK,
                                show_mode=ShowMode.SEND)
 
@@ -23,29 +22,22 @@ async def start_command_handler(message: Message, dialog_manager: DialogManager)
 @home_router.message(Command("help"))
 async def help_command_handler(message: Message, dialog_manager: DialogManager):
     logging.info("Help command received")
-    await message.delete()
     await dialog_manager.start(HomeDialogSG.help, mode=StartMode.RESET_STACK,
-                               show_mode=ShowMode.EDIT)
+                               show_mode=ShowMode.SEND)
 
 
 @home_router.message(Command("about"))
 async def about_command_handler(message: Message, dialog_manager: DialogManager):
     logging.info("About command received")
-    await message.delete()
     await dialog_manager.start(HomeDialogSG.about, mode=StartMode.RESET_STACK,
-                               show_mode=ShowMode.EDIT)
+                               show_mode=ShowMode.SEND)
 
 
 @home_router.message(Command("settings"))
 async def settings_command_handler(message: Message, dialog_manager: DialogManager):
     logging.info("Settings command received")
-    await message.delete()
     await dialog_manager.start(HomeDialogSG.settings, mode=StartMode.RESET_STACK,
-                               show_mode=ShowMode.EDIT)
+                               show_mode=ShowMode.SEND)
 
 
-@home_router.message()
-async def message_handler(message: Message):
-    logging.info(f"Message from '{message.from_user.username}' received: '{message.text}'")
-    await message.delete()
 

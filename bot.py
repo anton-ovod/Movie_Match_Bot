@@ -24,7 +24,7 @@ async def main():
     bot = Bot(token=config.bot_token.get_secret_value())
     dp = Dispatcher(storage=storage)
 
-    dp.include_routers(movie_search_router, home_router)
+    dp.include_routers(home_router, movie_search_router)
 
     setup_dialogs(dp)
     await dp.start_polling(bot)

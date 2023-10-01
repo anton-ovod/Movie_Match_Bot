@@ -1,10 +1,12 @@
+import logging
+
 from aiogram.filters.state import State, StatesGroup
+from aiogram.types import Message
 
-from aiogram_dialog import Window
+from aiogram_dialog import Window, Dialog, DialogManager, ShowMode
 from aiogram_dialog.widgets.kbd import Group, SwitchTo, Row
+from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.text import Const
-
-from aiogram_dialog import Dialog
 
 from dialogs import env
 
@@ -59,10 +61,19 @@ search_options_group = Group(
              on_click=lambda callback, self, manager: callback.answer("🏠 Home")),
 
 )
+
+
+async def message_handler(message: Message, message_input: MessageInput, dialog_manager: DialogManager):
+    logging.info(f"Message from '{message.from_user.username}' received: '{message.text}'")
+    dialog_manager.show_mode = ShowMode.EDIT
+    await message.delete()
+
+
 main_dialog = Dialog(
     Window(
         home_message,
         home_buttons_group,
+        MessageInput(message_handler),
         parse_mode="HTML",
         state=HomeDialogSG.home,
         disable_web_page_preview=True
@@ -71,6 +82,7 @@ main_dialog = Dialog(
         about_message,
         SwitchTo(Const("🏠 Home"), id="home", state=HomeDialogSG.home,
                  on_click=lambda callback, self, manager: callback.answer("🏠 Home")),
+        MessageInput(message_handler),
         parse_mode="HTML",
         state=HomeDialogSG.about,
         disable_web_page_preview=True
@@ -79,6 +91,7 @@ main_dialog = Dialog(
         help_message,
         SwitchTo(Const("🏠 Home"), id="home", state=HomeDialogSG.home,
                  on_click=lambda callback, self, manager: callback.answer("🏠 Home")),
+        MessageInput(message_handler),
         parse_mode="HTML",
         state=HomeDialogSG.help,
         disable_web_page_preview=True
@@ -87,6 +100,7 @@ main_dialog = Dialog(
         settings_message,
         SwitchTo(Const("🏠 Home"), id="home", state=HomeDialogSG.home,
                  on_click=lambda callback, self, manager: callback.answer("🏠 Home")),
+        MessageInput(message_handler),
         parse_mode="HTML",
         state=HomeDialogSG.settings,
         disable_web_page_preview=True
@@ -94,6 +108,7 @@ main_dialog = Dialog(
     Window(
         search_message,
         search_options_group,
+        MessageInput(message_handler),
         parse_mode="HTML",
         state=HomeDialogSG.search,
         disable_web_page_preview=True

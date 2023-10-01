@@ -16,10 +16,6 @@ movie_search_router.include_router(movie_dialog)
 async def init_movie_search_dialog(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     logging.info("Movie search dialog initialized")
     await dialog_manager.start(MovieDialogSG.title_request, show_mode=ShowMode.EDIT)
-    await callback.answer("🔍  Search » 🎬  Movie")
+    await callback.answer("🎬  Movie")
 
-
-@movie_search_router.message(MovieDialogSG.title_request)
-async def message_handler(message: Message):
-    logging.info(f"Message from '{message.from_user.username}' received: '{message.text}'")
 
