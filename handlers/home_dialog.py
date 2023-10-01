@@ -5,11 +5,11 @@ from aiogram.filters import Command
 from aiogram.types import Message
 
 from aiogram_dialog import DialogManager, StartMode, ShowMode
+from aiogram_dialog.widgets.input import MessageInput
 
-from dialogs.home_dialog import HomeDialogSG, main_dialog
+from misc.states import HomeDialogSG
 
 home_router = Router()
-home_router.include_router(main_dialog)
 
 
 @home_router.message(Command("start"))
@@ -40,4 +40,7 @@ async def settings_command_handler(message: Message, dialog_manager: DialogManag
                                show_mode=ShowMode.SEND)
 
 
-
+async def message_handler(message: Message, message_input: MessageInput, dialog_manager: DialogManager):
+    logging.info(f"Message from '{message.from_user.username}' received: '{message.text}'")
+    dialog_manager.show_mode = ShowMode.EDIT
+    await message.delete()

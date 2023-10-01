@@ -9,5 +9,4 @@ from aiogram_dialog import Dialog
 from dialogs.searching import env
 
 
-class ShowDialogSG(StatesGroup):
-    title_request = State()
+

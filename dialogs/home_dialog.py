@@ -1,37 +1,20 @@
-import logging
-
-from aiogram.filters.state import State, StatesGroup
-from aiogram.types import Message
-
-from aiogram_dialog import Window, Dialog, DialogManager, ShowMode
+from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.kbd import Group, SwitchTo, Row
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.text import Const
 
 from dialogs import env
 
-from .searching.movie_dialog import MovieDialogSG
-from .searching.tvshow_dialog import ShowDialogSG
-from .searching.person_dialog import PersonDialogSG
+from misc.states import HomeDialogSG, MovieDialogSG, ShowDialogSG, PersonDialogSG
 
 from handlers.searching.movie_dialog import init_movie_search_dialog
+from handlers.home_dialog import message_handler
 
 home_message = env.get_template("home_message.jinja2").render()
 about_message = env.get_template("about_message.jinja2").render()
 help_message = env.get_template("help_message.jinja2").render()
 settings_message = env.get_template("settings_message.jinja2").render()
 search_message = env.get_template("options_message.jinja2").render()
-
-
-class HomeDialogSG(StatesGroup):
-    home = State()
-    about = State()
-    help = State()
-    settings = State()
-    search = State()
-    cinema = State()
-    discover = State()
-
 
 home_buttons_group = Group(
     SwitchTo(Const("❓  Help"), id="help", state=HomeDialogSG.help,
@@ -62,14 +45,7 @@ search_options_group = Group(
 
 )
 
-
-async def message_handler(message: Message, message_input: MessageInput, dialog_manager: DialogManager):
-    logging.info(f"Message from '{message.from_user.username}' received: '{message.text}'")
-    dialog_manager.show_mode = ShowMode.EDIT
-    await message.delete()
-
-
-main_dialog = Dialog(
+home_dialog = Dialog(
     Window(
         home_message,
         home_buttons_group,
