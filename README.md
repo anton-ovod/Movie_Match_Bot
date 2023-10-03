@@ -1,2 +1,2 @@
-# Movie_Match_Bot
-Curently gathering strength to rewrite it using aiogram_dialog
+# Movie Match Bot
+Rewriting for aiogram-dialog lib is in progress
