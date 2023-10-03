@@ -5,7 +5,7 @@ import sys
 from redis.asyncio.client import Redis
 
 from aiogram import Bot, Dispatcher
-from aiogram.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
+from aiogram.fsm.storage.redis import RedisStorage, DefaultKeyBuilder, RedisEventIsolation
 
 from aiogram_dialog import setup_dialogs
 
@@ -17,11 +17,13 @@ from dialogs.searching.movie_dialog import movie_dialog
 
 from config_reader import config
 
-storage = RedisStorage(Redis(),
+redis_instance = Redis()
+
+storage = RedisStorage(redis_instance,
                        key_builder=DefaultKeyBuilder(with_destiny=True))
 
 bot = Bot(token=config.bot_token.get_secret_value())
-dp = Dispatcher(storage=storage)
+dp = Dispatcher(storage=storage, event_isolation=RedisEventIsolation(redis=storage.redis))
 
 
 async def main():
@@ -31,7 +33,6 @@ async def main():
     movie_search_router.include_router(movie_dialog)
 
     dp.include_routers(home_router, movie_search_router)
-
     setup_dialogs(dp)
     await dp.start_polling(bot)
 

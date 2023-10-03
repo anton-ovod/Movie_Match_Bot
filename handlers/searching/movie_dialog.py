@@ -1,11 +1,13 @@
 import logging
 
-from aiogram import Router
+from aiogram import Router, Bot
 from aiogram.types import CallbackQuery, Message
 
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
+
+from utils.imdb_api import get_movies_by_title
 
 from misc.states import MovieDialogSG
 
@@ -26,6 +28,8 @@ async def title_request_handler(message: Message, message_input: MessageInput,
                                 dialog_manager: DialogManager):
     dialog_manager.dialog_data["user_request"] = message.text
     logging.info(f"User request: `{message.text}` successfully saved")
+    results = []
+    dialog_manager.dialog_data["1"] = [result.model_dump_json(indent=2) for result in results]
     await message.delete()
     await dialog_manager.switch_to(MovieDialogSG.movies_pagination, show_mode=ShowMode.EDIT)
 
