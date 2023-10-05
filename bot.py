@@ -2,7 +2,7 @@ import logging
 import asyncio
 import sys
 
-from redis.asyncio.client import Redis
+from utils.caching_handlers import redis_instance
 
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.redis import RedisStorage, DefaultKeyBuilder, RedisEventIsolation
@@ -17,7 +17,6 @@ from dialogs.searching.movie_dialog import movie_dialog
 
 from config_reader import config
 
-redis_instance = Redis()
 
 storage = RedisStorage(redis_instance,
                        key_builder=DefaultKeyBuilder(with_destiny=True))

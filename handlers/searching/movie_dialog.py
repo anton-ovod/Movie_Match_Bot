@@ -7,8 +7,6 @@ from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
 
-from utils.imdb_api import get_movies_by_title
-
 from misc.states import MovieDialogSG
 
 from dialogs.searching import env
@@ -28,8 +26,9 @@ async def title_request_handler(message: Message, message_input: MessageInput,
                                 dialog_manager: DialogManager):
     dialog_manager.dialog_data["user_request"] = message.text
     logging.info(f"User request: `{message.text}` successfully saved")
-    results = []
-    dialog_manager.dialog_data["1"] = [result.model_dump_json(indent=2) for result in results]
+
+    redis_key = f"keybmovies:{message.text.strip().lower()}"
+    dialog_manager.dialog_data["current_keyboard_movies"] = ''
     await message.delete()
     await dialog_manager.switch_to(MovieDialogSG.movies_pagination, show_mode=ShowMode.EDIT)
 

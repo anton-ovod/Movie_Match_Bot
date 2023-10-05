@@ -12,9 +12,6 @@ from misc.states import MovieDialogSG
 title_request_message = env.get_template("movie_message.jinja2").render()
 results_message = env.get_template("results_message.jinja2")
 
-
-
-
 movie_dialog = Dialog(
     Window(
         title_request_message,
@@ -27,8 +24,8 @@ movie_dialog = Dialog(
         disable_web_page_preview=True
     ),
     Window(
-        #results_message.render(title_request="{dialog_data[user_request]}"),
-        Format("{dialog_data[keyboard_titles][3]}"),
+        results_message.render(title_request="{dialog_data[user_request]}"),
+        # Format("{dialog_data[current_keyboard_movies][0]}"),
         Back(text=Const("⬅️  Back")),
         state=MovieDialogSG.movies_pagination,
         parse_mode="HTML",
