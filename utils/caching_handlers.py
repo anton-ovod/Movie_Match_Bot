@@ -1,7 +1,7 @@
 import json
 import logging
 from typing import Union, List
-
+from datetime import timedelta
 from redis.asyncio.client import Redis
 
 from models.movie import KeyboardMovie
@@ -13,9 +13,9 @@ redis_instance = Redis(decode_responses=True)
 
 async def set_data(redis_key: str, data: list[KeyboardMovie] | str) -> None:
     if isinstance(data, list):
-
         await redis_instance.rpush(redis_key,
                                    *[json.dumps(item.model_dump(), default=serialize_datetime) for item in data])
+        await redis_instance.expire(redis_key, timedelta(hours=12))
     else:
         await redis_instance.set("data", data)
 
@@ -48,10 +48,8 @@ async def get_data(key: str) -> Union[str, int, List[KeyboardMovie]]:
         Union[str, int, List[KeyboardMovie]]: The retrieved data or 0 if not found.
     """
     try:
-        logging.info(await redis_instance.type(key))
         if await redis_instance.type(key) == 'list':
             data = await redis_instance.lrange(key, 0, -1)
-            logging.info(f"Data from Redis: {data}")
             return data
         else:
             result = await redis_instance.get(key)

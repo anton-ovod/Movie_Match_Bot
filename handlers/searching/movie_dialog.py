@@ -1,3 +1,4 @@
+import json
 import logging
 
 from aiogram import Router, Bot
@@ -10,7 +11,9 @@ from aiogram_dialog.widgets.kbd import Button
 from misc.states import MovieDialogSG
 
 from utils.caching_handlers import get_data, set_data, is_exist
-from utils.imdb_api import get_movies_by_title
+from utils.tmdb_api import get_movies_by_title
+
+from models.movie import KeyboardMovie
 
 from dialogs.searching import env
 
@@ -33,8 +36,11 @@ async def title_request_handler(message: Message, message_input: MessageInput,
     redis_key = f"keybmovies:{message.text.strip().lower()}"
 
     if await is_exist(redis_key):
-        keyboard_movies = await get_data(redis_key)
+        logging.info(f"Retrieving data from Redis by key: {redis_key}")
+        cache = await get_data(redis_key)
+        keyboard_movies = [KeyboardMovie(**(json.loads(item))) for item in cache]
     else:
+        logging.info(f"Making a API request to TMDB API by title: {message.text}")
         keyboard_movies = await get_movies_by_title(message.text)
         await set_data(redis_key, keyboard_movies)
 
