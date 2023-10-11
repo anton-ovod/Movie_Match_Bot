@@ -1,14 +1,14 @@
 import json
 import logging
+import math
 from typing import Any
 
-from aiogram import Router, Bot
+from aiogram import Router
 from aiogram.types import CallbackQuery, Message
 
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
-from aiogram_dialog.widgets.text import Const
 
 from misc.states import MovieDialogSG
 
@@ -47,6 +47,7 @@ async def title_request_handler(message: Message, message_input: MessageInput,
         await set_data(redis_key, keyboard_movies)
 
     dialog_manager.dialog_data["current_keyboard_movies"] = keyboard_movies
+    dialog_manager.dialog_data["current_keyboard_movies_page"] = 1
     logging.info(f"Keyboard movies: {keyboard_movies}")
     await message.delete()
     await dialog_manager.switch_to(MovieDialogSG.movies_pagination, show_mode=ShowMode.EDIT)
@@ -67,9 +68,29 @@ async def message_handler(message: Message, message_input: MessageInput, dialog_
 async def get_list_of_keyboard_movies(dialog_manager: DialogManager, **kwargs):
     keyboard_movies = [KeyboardMovie(**(json.loads(item)))
                        for item in dialog_manager.dialog_data["current_keyboard_movies"]]
+    number_of_pages = math.ceil(len(keyboard_movies) / 10)
+
+    keyboard_movies = keyboard_movies[(dialog_manager.dialog_data["current_keyboard_movies_page"] - 1) * 10:
+                                      dialog_manager.dialog_data["current_keyboard_movies_page"] * 10]
+
     return {
-        "keyboard_movies": keyboard_movies
+        "keyboard_movies": keyboard_movies,
+        "total_keyboard_movies_pages": number_of_pages
     }
+
+
+async def previous_page_handler(callback: CallbackQuery, widget: Any, manager: DialogManager):
+    logging.info("Previous page handler")
+    manager.dialog_data["current_keyboard_movies_page"] -= 1
+    await callback.answer("🔙 Previous page")
+    await manager.update(data=manager.dialog_data, show_mode=ShowMode.EDIT)
+
+
+async def next_page_handler(callback: CallbackQuery, widget: Any, manager: DialogManager):
+    logging.info("Next page handler")
+    manager.dialog_data["current_keyboard_movies_page"] += 1
+    await callback.answer("🔜 Next page")
+    await manager.update(data=manager.dialog_data, show_mode=ShowMode.EDIT)
 
 
 async def unknown_message_handler(message: Message, *args):
