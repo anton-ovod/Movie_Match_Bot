@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Any
 
 from aiogram import Router, Bot
 from aiogram.types import CallbackQuery, Message
@@ -7,6 +8,7 @@ from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
+from aiogram_dialog.widgets.text import Const
 
 from misc.states import MovieDialogSG
 
@@ -33,27 +35,41 @@ async def title_request_handler(message: Message, message_input: MessageInput,
     dialog_manager.dialog_data["user_request"] = message.text
     logging.info(f"User request: `{message.text}` successfully saved")
 
-    redis_key = f"keybmovies:{message.text.strip().lower()}"
+    redis_key = f"keybmovies:{message.text.lower().replace(' ', '')}"
 
     if await is_exist(redis_key):
         logging.info(f"Retrieving data from Redis by key: {redis_key}")
         cache = await get_data(redis_key)
-        keyboard_movies = [KeyboardMovie(**(json.loads(item))) for item in cache]
+        keyboard_movies = cache
     else:
         logging.info(f"Making a API request to TMDB API by title: {message.text}")
         keyboard_movies = await get_movies_by_title(message.text)
         await set_data(redis_key, keyboard_movies)
 
-    # dialog_manager.dialog_data["current_keyboard_movies"] = keyboard_movies
+    dialog_manager.dialog_data["current_keyboard_movies"] = keyboard_movies
     logging.info(f"Keyboard movies: {keyboard_movies}")
     await message.delete()
     await dialog_manager.switch_to(MovieDialogSG.movies_pagination, show_mode=ShowMode.EDIT)
+
+
+async def movie_overview_handler(callback: CallbackQuery, widget: Any,
+                                 manager: DialogManager, item_id: str):
+    logging.info(f"Movie overview handler: {item_id}")
+    await callback.answer("🎬 Movie overview")
 
 
 async def message_handler(message: Message, message_input: MessageInput, dialog_manager: DialogManager):
     logging.info(f"Message from '{message.from_user.username}' received: '{message.text}'")
     dialog_manager.show_mode = ShowMode.EDIT
     await message.delete()
+
+
+async def get_list_of_keyboard_movies(dialog_manager: DialogManager, **kwargs):
+    keyboard_movies = [KeyboardMovie(**(json.loads(item)))
+                       for item in dialog_manager.dialog_data["current_keyboard_movies"]]
+    return {
+        "keyboard_movies": keyboard_movies
+    }
 
 
 async def unknown_message_handler(message: Message, *args):

@@ -25,6 +25,9 @@ class KeyboardMovie(BaseModel):
     release_date: date | None = None
     tmdb_id: PositiveInt = None
 
+    def __getitem__(self, item):
+        return getattr(self, item)
+
     @property
     def pretty_title(self) -> str:
         return self.title + f" ({self.release_date.year})" if self.release_date else self.title
@@ -185,7 +188,3 @@ class Movie(KeyboardMovie):
         message += f"\n{bottom_line}"
 
         return message
-
-
-
-

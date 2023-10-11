@@ -11,10 +11,9 @@ from misc.serialization import serialize_datetime
 redis_instance = Redis(decode_responses=True)
 
 
-async def set_data(redis_key: str, data: list[KeyboardMovie] | str) -> None:
+async def set_data(redis_key: str, data: list[str] | str) -> None:
     if isinstance(data, list):
-        await redis_instance.rpush(redis_key,
-                                   *[json.dumps(item.model_dump(), default=serialize_datetime) for item in data])
+        await redis_instance.rpush(redis_key, *data)
         await redis_instance.expire(redis_key, timedelta(hours=12))
     else:
         await redis_instance.set("data", data)

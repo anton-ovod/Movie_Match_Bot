@@ -1,13 +1,18 @@
+import json
+
 import aiohttp
 import logging
 
 from typing import List
 from config_reader import config
 from datetime import datetime
+
 from models.movie import KeyboardMovie, Movie, Actor, Rating
 
+from misc.serialization import serialize_datetime
 
-async def get_movies_by_title(title: str) -> List[KeyboardMovie]:
+
+async def get_movies_by_title(title: str) -> list[str]:
     try:
         async with aiohttp.ClientSession() as session:
             search_movie_url = config.search_movie_url.get_secret_value()
@@ -28,9 +33,9 @@ async def get_movies_by_title(title: str) -> List[KeyboardMovie]:
                         release_date = datetime.strptime(result.get("release_date"), "%Y-%m-%d").date()
                     except ValueError:
                         release_date = None
-                    movies.append(KeyboardMovie(title=title,
-                                                release_date=release_date,
-                                                tmdb_id=tmdb_id))
+                    movies.append(json.dumps(dict(title=title,
+                                             release_date=release_date,
+                                             tmdb_id=tmdb_id), default=serialize_datetime))
                 return movies
     except Exception as e:
         logging.error(f"Error while getting movies by title: {e}")
