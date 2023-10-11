@@ -5,7 +5,7 @@ from aiogram_dialog.widgets.kbd import Back, Cancel, Group
 from aiogram_dialog.widgets.text import Const, Format
 
 from dialogs.searching import env
-from handlers.searching.movie_dialog import (title_request_handler, unknown_message_handler,
+from handlers.searching.movie_dialog import (title_request_handler, unknown_message_handler, message_handler,
                                              )
 from misc.states import MovieDialogSG
 
@@ -27,6 +27,7 @@ movie_dialog = Dialog(
         results_message.render(title_request="{dialog_data[user_request]}"),
         # Format("{dialog_data[current_keyboard_movies][0]}"),
         Back(text=Const("⬅️  Back")),
+        MessageInput(message_handler),
         state=MovieDialogSG.movies_pagination,
         parse_mode="HTML",
         disable_web_page_preview=True

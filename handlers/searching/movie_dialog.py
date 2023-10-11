@@ -50,5 +50,11 @@ async def title_request_handler(message: Message, message_input: MessageInput,
     await dialog_manager.switch_to(MovieDialogSG.movies_pagination, show_mode=ShowMode.EDIT)
 
 
+async def message_handler(message: Message, message_input: MessageInput, dialog_manager: DialogManager):
+    logging.info(f"Message from '{message.from_user.username}' received: '{message.text}'")
+    dialog_manager.show_mode = ShowMode.EDIT
+    await message.delete()
+
+
 async def unknown_message_handler(message: Message, *args):
     await message.answer(text=unknown_type_message, parse_mode="HTML")
