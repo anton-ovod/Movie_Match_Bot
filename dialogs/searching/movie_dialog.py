@@ -16,16 +16,16 @@ title_request_message = env.get_template("movie_message.jinja2").render()
 results_message = env.get_template("results_message.jinja2")
 
 keys_emojis = {
-    1: "1️⃣",
-    2: "2️⃣",
-    3: "3️⃣",
-    4: "4️⃣",
-    5: "5️⃣",
-    6: "6️⃣",
-    7: "7️⃣",
-    8: "8️⃣",
-    9: "9️⃣",
-    10: "🔟",
+    "1": "1️⃣",
+    "2": "2️⃣",
+    "3": "3️⃣",
+    "4": "4️⃣",
+    "5": "5️⃣",
+    "6": "6️⃣",
+    "7": "7️⃣",
+    "8": "8️⃣",
+    "9": "9️⃣",
+    "10": "🔟",
 }
 
 keyboard_movies_group = Group(
@@ -41,26 +41,43 @@ keyboard_movies_group = Group(
 )
 
 keyboard_movies_navigation_group = Group(
-    Row(
-        Back(Const("⬅️  Back"), on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
-        SwitchTo(Const("🏠 Home"), id="home", state=HomeDialogSG.home,
-                 on_click=lambda callback, self, manager: callback.answer("🏠 Home"))
-    ) if "{total_keyboard_movies_pages}" == "1" else
-    Row(
-        Button(Const(keys_emojis[1]), id="prev_page",
-               on_click=previous_page_handler),
-        SwitchTo(Const("🏠 Home"), id="home", state=HomeDialogSG.home,
-                 on_click=lambda callback, self, manager: callback.answer("🏠 Home")),
-        Button(Const(keys_emojis[2]), id="next_page",
-               on_click=next_page_handler)
 
-    ) if "{dialog_data[current_keyboard_movies_page]}" != "{total_keyboard_movies_pages}" else
     Row(
-        Button(Const(keys_emojis[1]), id="prev_page",
-               on_click=previous_page_handler),
-        SwitchTo(Const("🏠 Home"), id="home", state=HomeDialogSG.home,
-                 on_click=lambda callback, self, manager: callback.answer("🏠 Home")),
+        Back(Const("⬅️  Back"), id="back",
+             on_click=lambda callback, self, manager: callback.answer("🤖 I'm ready to search for movies!")
+             ),
+        when=lambda _, __, dialog_manager: dialog_manager.dialog_data["total_number_of_keyboard_movies"] == 1
+
+    ),
+
+    Row(
+        Back(Const("⬅️  Back"), id="back",
+             on_click=lambda callback, self, manager: callback.answer("🤖 I'm ready to search for movies!")),
+        Cancel(Const("🕵️ Search"), id="search",
+               on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
+        Button(Const(keys_emojis[Format("{next_page}").text]), id="next_page", on_click=next_page_handler),
+        when=lambda _, __, dialog_manager: dialog_manager.dialog_data["current_keyboard_movies_page"] == 1
+    ),
+
+    Row(
+        Button(Const(keys_emojis[Format("{prev_page}").text]), id="prev_page", on_click=previous_page_handler),
+        Cancel(Const("🕵️ Search"), id="search",
+               on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
+        when=lambda _, __, dialog_manager: dialog_manager.dialog_data["current_keyboard_movies_page"] ==
+                                           dialog_manager.dialog_data["total_number_of_keyboard_movies"]
+
+    ),
+
+    Row(
+        Button(Const(keys_emojis[Format("{prev_page}").text]), id="prev_page", on_click=previous_page_handler),
+        Cancel(Const("🕵️ Search"), id="search",
+               on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
+        Button(Const(keys_emojis[Format("{next_page}")]), id="next_page", on_click=next_page_handler),
+        when=lambda _, __, dialog_manager: dialog_manager.dialog_data["current_keyboard_movies_page"] != dialog_manager.dialog_data["total_number_of_keyboard_movies"] > 1 !=
+                                           dialog_manager.dialog_data["current_keyboard_movies_page"]
+
     )
+
 )
 
 movie_dialog = Dialog(
@@ -75,7 +92,7 @@ movie_dialog = Dialog(
         disable_web_page_preview=True
     ),
     Window(
-        results_message.render(title_request="{dialog_data[user_request]}"),
+        results_message.render(title_request="{dialog_data[user_request]} +++ {prev_page} +++ {next_page}"),
         keyboard_movies_group,
         keyboard_movies_navigation_group,
         MessageInput(message_handler),

@@ -48,6 +48,7 @@ async def title_request_handler(message: Message, message_input: MessageInput,
 
     dialog_manager.dialog_data["current_keyboard_movies"] = keyboard_movies
     dialog_manager.dialog_data["current_keyboard_movies_page"] = 1
+
     logging.info(f"Keyboard movies: {keyboard_movies}")
     await message.delete()
     await dialog_manager.switch_to(MovieDialogSG.movies_pagination, show_mode=ShowMode.EDIT)
@@ -68,29 +69,42 @@ async def message_handler(message: Message, message_input: MessageInput, dialog_
 async def get_list_of_keyboard_movies(dialog_manager: DialogManager, **kwargs):
     keyboard_movies = [KeyboardMovie(**(json.loads(item)))
                        for item in dialog_manager.dialog_data["current_keyboard_movies"]]
+
     number_of_pages = math.ceil(len(keyboard_movies) / 10)
+    dialog_manager.dialog_data["total_number_of_keyboard_movies"] = number_of_pages
 
     keyboard_movies = keyboard_movies[(dialog_manager.dialog_data["current_keyboard_movies_page"] - 1) * 10:
                                       dialog_manager.dialog_data["current_keyboard_movies_page"] * 10]
 
+    next_page_number = dialog_manager.dialog_data["current_keyboard_movies_page"] + 1 if \
+        dialog_manager.dialog_data["current_keyboard_movies_page"] + 1 <= number_of_pages \
+        else number_of_pages
+
+    prev_page_number = dialog_manager.dialog_data["current_keyboard_movies_page"] - 1 if \
+        dialog_manager.dialog_data["current_keyboard_movies_page"] - 1 > 0 \
+        else 0
+
     return {
         "keyboard_movies": keyboard_movies,
-        "total_keyboard_movies_pages": number_of_pages
+        "next_page": next_page_number,
+        "prev_page": prev_page_number,
     }
 
 
 async def previous_page_handler(callback: CallbackQuery, widget: Any, manager: DialogManager):
     logging.info("Previous page handler")
-    manager.dialog_data["current_keyboard_movies_page"] -= 1
-    await callback.answer("🔙 Previous page")
+    if manager.dialog_data["current_keyboard_movies_page"] > 1:
+        manager.dialog_data["current_keyboard_movies_page"] -= 1
     await manager.update(data=manager.dialog_data, show_mode=ShowMode.EDIT)
+    await callback.answer("🔙 Previous page")
 
 
 async def next_page_handler(callback: CallbackQuery, widget: Any, manager: DialogManager):
     logging.info("Next page handler")
-    manager.dialog_data["current_keyboard_movies_page"] += 1
-    await callback.answer("🔜 Next page")
+    if manager.dialog_data["current_keyboard_movies_page"] < manager.dialog_data["total_number_of_keyboard_movies"]:
+        manager.dialog_data["current_keyboard_movies_page"] += 1
     await manager.update(data=manager.dialog_data, show_mode=ShowMode.EDIT)
+    await callback.answer("🔜 Next page")
 
 
 async def unknown_message_handler(message: Message, *args):
