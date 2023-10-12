@@ -22,6 +22,18 @@ from dialogs.searching import env
 movie_search_router = Router()
 
 unknown_type_message = env.get_template("unknown_type_message.jinja2").render()
+keys_emojis = {
+    1: "1️⃣",
+    2: "2️⃣",
+    3: "3️⃣",
+    4: "4️⃣",
+    5: "5️⃣",
+    6: "6️⃣",
+    7: "7️⃣",
+    8: "8️⃣",
+    9: "9️⃣",
+    10: "🔟",
+}
 
 
 async def init_movie_search_dialog(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
@@ -82,12 +94,12 @@ async def get_list_of_keyboard_movies(dialog_manager: DialogManager, **kwargs):
 
     prev_page_number = dialog_manager.dialog_data["current_keyboard_movies_page"] - 1 if \
         dialog_manager.dialog_data["current_keyboard_movies_page"] - 1 > 0 \
-        else 0
+        else 1
 
     return {
         "keyboard_movies": keyboard_movies,
-        "next_page": next_page_number,
-        "prev_page": prev_page_number,
+        "next_page": keys_emojis[next_page_number],
+        "prev_page": keys_emojis[prev_page_number],
     }
 
 
@@ -96,7 +108,7 @@ async def previous_page_handler(callback: CallbackQuery, widget: Any, manager: D
     if manager.dialog_data["current_keyboard_movies_page"] > 1:
         manager.dialog_data["current_keyboard_movies_page"] -= 1
     await manager.update(data=manager.dialog_data, show_mode=ShowMode.EDIT)
-    await callback.answer("🔙 Previous page")
+    await callback.answer("Page " + keys_emojis[manager.dialog_data["current_keyboard_movies_page"]])
 
 
 async def next_page_handler(callback: CallbackQuery, widget: Any, manager: DialogManager):
@@ -104,7 +116,7 @@ async def next_page_handler(callback: CallbackQuery, widget: Any, manager: Dialo
     if manager.dialog_data["current_keyboard_movies_page"] < manager.dialog_data["total_number_of_keyboard_movies"]:
         manager.dialog_data["current_keyboard_movies_page"] += 1
     await manager.update(data=manager.dialog_data, show_mode=ShowMode.EDIT)
-    await callback.answer("🔜 Next page")
+    await callback.answer("Page " + keys_emojis[manager.dialog_data["current_keyboard_movies_page"]])
 
 
 async def unknown_message_handler(message: Message, *args):
