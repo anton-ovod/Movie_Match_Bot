@@ -69,9 +69,9 @@ async def title_request_handler(message: Message, message_input: MessageInput,
         await dialog_manager.switch_to(MovieDialogSG.movies_pagination, show_mode=ShowMode.EDIT)
 
 
-async def movie_overview_handler(callback: CallbackQuery, widget: Any,
-                                 manager: DialogManager, item_id: str):
-    logging.info(f"Movie overview handler: {item_id}")
+async def movie_overview_handler(callback: CallbackQuery, *args, **kwargs):
+    movie_tmdb_id = callback.data.split(':')[1]
+    logging.info(f"Movie overview handler: {movie_tmdb_id}")
     await callback.answer("🎬 Movie overview")
 
 
@@ -81,7 +81,7 @@ async def message_handler(message: Message, message_input: MessageInput, dialog_
     await message.delete()
 
 
-async def get_list_of_keyboard_movies(dialog_manager: DialogManager, **kwargs):
+async def get_list_of_keyboard_movies(dialog_manager: DialogManager, *args, **kwargs):
     keyboard_movies = [KeyboardMovie(**(json.loads(item)))
                        for item in dialog_manager.dialog_data["current_keyboard_movies"]]
 
@@ -106,7 +106,7 @@ async def get_list_of_keyboard_movies(dialog_manager: DialogManager, **kwargs):
     }
 
 
-async def previous_page_handler(callback: CallbackQuery, widget: Any, manager: DialogManager):
+async def previous_page_handler(callback: CallbackQuery, manager: DialogManager, *args, **kwargs):
     logging.info("Previous page handler")
     if manager.dialog_data["current_keyboard_movies_page"] > 1:
         manager.dialog_data["current_keyboard_movies_page"] -= 1
@@ -114,7 +114,7 @@ async def previous_page_handler(callback: CallbackQuery, widget: Any, manager: D
     await callback.answer("Page " + keys_emojis[manager.dialog_data["current_keyboard_movies_page"]])
 
 
-async def next_page_handler(callback: CallbackQuery, widget: Any, manager: DialogManager):
+async def next_page_handler(callback: CallbackQuery, manager: DialogManager, *args, **kwargs):
     logging.info("Next page handler")
     if manager.dialog_data["current_keyboard_movies_page"] < manager.dialog_data["total_number_of_keyboard_movies"]:
         manager.dialog_data["current_keyboard_movies_page"] += 1
