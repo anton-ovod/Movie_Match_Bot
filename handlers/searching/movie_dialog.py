@@ -1,7 +1,6 @@
 import json
 import logging
 import math
-from typing import Any
 
 from aiogram import Router
 from aiogram.types import CallbackQuery, Message
@@ -13,9 +12,10 @@ from aiogram_dialog.widgets.kbd import Button
 from misc.states import MovieDialogSG
 
 from utils.caching_handlers import get_data, set_data, is_exist
-from utils.tmdb_api import get_movies_by_title
+from utils.tmdb_api import get_movies_by_title, get_movie_details_tmdb
+from utils.omdb_api import get_movie_details_omdb
 
-from models.movie import KeyboardMovie
+from models.movie import KeyboardMovie, Movie
 
 from dialogs.searching import env
 
@@ -58,7 +58,8 @@ async def title_request_handler(message: Message, message_input: MessageInput,
             keyboard_movies = cache
         else:
             logging.info(f"Making a API request to TMDB API by title: {message.text}")
-            keyboard_movies = await get_movies_by_title(message.text)
+            results = await get_movies_by_title(message.text)
+            keyboard_movies = [movie.json_data for movie in results]
             await set_data(redis_key, keyboard_movies)
 
         dialog_manager.dialog_data["current_keyboard_movies"] = keyboard_movies
@@ -72,13 +73,14 @@ async def title_request_handler(message: Message, message_input: MessageInput,
 async def movie_overview_handler(callback: CallbackQuery, *args, **kwargs):
     movie_tmdb_id = callback.data.split(':')[1]
     logging.info(f"Movie overview handler: {movie_tmdb_id}")
+    movie = Movie(tmdb_id=movie_tmdb_id)
+    await get_movie_details_tmdb(movie)
+
+    if movie.imdb_id:
+        await get_movie_details_omdb(movie)
+    logging.info(f"Movie: {movie.movie_overview_data}")
+
     await callback.answer("🎬 Movie overview")
-
-
-async def message_handler(message: Message, message_input: MessageInput, dialog_manager: DialogManager):
-    logging.info(f"Message from '{message.from_user.username}' received: '{message.text}'")
-    dialog_manager.show_mode = ShowMode.EDIT
-    await message.delete()
 
 
 async def get_list_of_keyboard_movies(dialog_manager: DialogManager, *args, **kwargs):
@@ -120,6 +122,12 @@ async def next_page_handler(callback: CallbackQuery, manager: DialogManager, *ar
         manager.dialog_data["current_keyboard_movies_page"] += 1
     await manager.update(data=manager.dialog_data, show_mode=ShowMode.EDIT)
     await callback.answer("Page " + keys_emojis[manager.dialog_data["current_keyboard_movies_page"]])
+
+
+async def message_handler(message: Message, message_input: MessageInput, dialog_manager: DialogManager):
+    logging.info(f"Message from '{message.from_user.username}' received: '{message.text}'")
+    dialog_manager.show_mode = ShowMode.EDIT
+    await message.delete()
 
 
 async def unknown_message_handler(message: Message, *args):
