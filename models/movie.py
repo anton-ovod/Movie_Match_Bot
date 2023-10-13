@@ -3,8 +3,6 @@ from typing import List
 from pydantic import BaseModel, PositiveInt
 from datetime import date
 
-
-
 from config_reader import config
 
 rating_characters = {
@@ -53,27 +51,27 @@ class Actor(BaseModel):
 
 class Movie(KeyboardMovie):
     # Data is getting from tmdb api
-    imdb_id: str = None
-    tagline: str = None
-    overview: str = None
-    poster_url: str = None
-    trailer_url: str = None
-    homepage: str = None
-    runtime: PositiveInt = None
-    genres: List[str] = []
+    imdb_id: str | None = None
+    tagline: str | None = None
+    overview: str | None = None
+    poster_url: str | None = None
+    trailer_url: str | None = None
+    homepage: str | None = None
+    runtime: PositiveInt | None = None
+    genres: List[str] | None = []
 
     # Data is getting from omdb api
-    ratings: List[Rating] = []
-    cast: List[Actor] = []
-    awards: str = None
-    age_categories: str = None
-    countries: List[str] = []
+    ratings: List[Rating] | None = []
+    cast: List[Actor] | None = []
+    awards: str | None = None
+    age_categories: str | None = None
+    countries: List[str] | None = []
 
     # Self made links
-    rotten_tomatoes_url: str = None
-    metacritic_url: str = None
-    imdb_url: str = None
-    tmdb_url: str = None
+    rotten_tomatoes_url: str | None = None
+    metacritic_url: str | None = None
+    imdb_url: str | None = None
+    tmdb_url: str | None = None
 
     def calculate_average_rating(self) -> None:
         if len(self.ratings) == 1:

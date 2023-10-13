@@ -11,6 +11,14 @@ redis_instance = Redis(decode_responses=True)
 
 
 async def set_data(redis_key: str, data: list[str] | str) -> None:
+    """
+    Set data to Redis.
+
+    :param redis_key:  The Redis key to set data to.
+    :param data:  The data to set.
+    :return:  None
+
+    """
     try:
         if isinstance(data, list):
             await redis_instance.rpush(redis_key, *data)
@@ -26,11 +34,9 @@ async def is_exist(key: str) -> bool:
     """
     Check if key exists in Redis.
 
-    Args:
-        key (str): The Redis key to check.
+    :param key:  The Redis key to check.
+    :return:  True if key exists, False otherwise.
 
-    Returns:
-        bool: True if key exists, False otherwise.
     """
     try:
         return await redis_instance.exists(key)
@@ -41,13 +47,11 @@ async def is_exist(key: str) -> bool:
 
 async def get_data(key: str) -> Union[str, int, List[str]]:
     """
-    Retrieve data from Redis by key.
+    Get data from Redis.
 
-    Args:
-        key (str): The Redis key to retrieve data from.
+    :param key:  The Redis key to get data from.
+    :return:  The data from Redis.
 
-    Returns:
-        Union[str, int, List[KeyboardMovie]]: The retrieved data or 0 if not found.
     """
     try:
         if await redis_instance.type(key) == 'list':

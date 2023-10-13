@@ -22,6 +22,7 @@ from dialogs.searching import env
 movie_search_router = Router()
 
 unknown_type_message = env.get_template("unknown_type_message.jinja2").render()
+
 keys_emojis = {
     1: "1️⃣",
     2: "2️⃣",
@@ -70,17 +71,49 @@ async def title_request_handler(message: Message, message_input: MessageInput,
         await dialog_manager.switch_to(MovieDialogSG.movies_pagination, show_mode=ShowMode.EDIT)
 
 
-async def movie_overview_handler(callback: CallbackQuery, *args, **kwargs):
+async def movie_overview_handler(callback: CallbackQuery, button: Button, dialog_manager: DialogManager,
+                                 *args, **kwargs):
     movie_tmdb_id = callback.data.split(':')[1]
     logging.info(f"Movie overview handler: {movie_tmdb_id}")
-    movie = Movie(tmdb_id=movie_tmdb_id)
-    await get_movie_details_tmdb(movie)
 
-    if movie.imdb_id:
-        await get_movie_details_omdb(movie)
-    logging.info(f"Movie: {movie.movie_overview_data}")
+    redis_key = f"movieoverview:{movie_tmdb_id}"
 
+    if await is_exist(redis_key):
+        logging.info(f"Retrieving data from Redis by key: {redis_key}")
+        cache = await get_data(redis_key)
+        movie = Movie(**(json.loads(cache)))
+    else:
+        logging.info(f"Making a API request to TMDB API by movie id: {movie_tmdb_id}")
+        movie = Movie(tmdb_id=movie_tmdb_id)
+        await get_movie_details_tmdb(movie)
+        if movie.imdb_id:
+            await get_movie_details_omdb(movie)
+        await set_data(redis_key, movie.json_data)
+
+    logging.info(f"Movie: {movie.json_data}")
+    dialog_manager.dialog_data["current_movie"] = movie.json_data
+
+    await dialog_manager.switch_to(MovieDialogSG.movie_overview, show_mode=ShowMode.EDIT)
     await callback.answer("🎬 Movie overview")
+
+
+async def get_movie_overview_data(dialog_manager: DialogManager, *args, **kwargs) -> dict:
+    """
+    Get movie overview data from dialog manager.
+
+    :param dialog_manager:
+    :param args:
+    :param kwargs:
+    :return:  Movie overview data.
+
+    """
+
+    json_data = json.loads(dialog_manager.dialog_data["current_movie"])
+    logging.info(f"Movie overview data: {json_data}")
+
+    return {
+        "json_data": json_data
+    }
 
 
 async def get_list_of_keyboard_movies(dialog_manager: DialogManager, *args, **kwargs):
