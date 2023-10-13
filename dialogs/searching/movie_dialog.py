@@ -90,5 +90,9 @@ movie_dialog = Dialog(
         state=MovieDialogSG.movies_pagination,
         parse_mode="HTML",
         disable_web_page_preview=True
+    ),
+    Window(
+
+        state=MovieDialogSG.movie_overview,
     )
 )

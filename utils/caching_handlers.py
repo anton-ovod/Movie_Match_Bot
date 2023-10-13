@@ -12,11 +12,16 @@ redis_instance = Redis(decode_responses=True)
 
 
 async def set_data(redis_key: str, data: list[str] | str) -> None:
-    if isinstance(data, list):
-        await redis_instance.rpush(redis_key, *data)
-        await redis_instance.expire(redis_key, timedelta(hours=12))
-    else:
-        await redis_instance.set("data", data)
+    try:
+        if isinstance(data, list):
+            await redis_instance.rpush(redis_key, *data)
+            await redis_instance.expire(redis_key, timedelta(hours=12))
+        else:
+            await redis_instance.set("data", data)
+            await redis_instance.expire(redis_key, timedelta(hours=12))
+    except Exception as e:
+        logging.error(f"Error setting data to Redis: {str(e)}")
+
 
 
 async def is_exist(key: str) -> bool:

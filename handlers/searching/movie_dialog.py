@@ -44,26 +44,29 @@ async def init_movie_search_dialog(callback: CallbackQuery, button: Button, dial
 
 async def title_request_handler(message: Message, message_input: MessageInput,
                                 dialog_manager: DialogManager):
-    dialog_manager.dialog_data["user_request"] = message.text
-    logging.info(f"User request: `{message.text}` successfully saved")
-
-    redis_key = f"keybmovies:{message.text.lower().replace(' ', '')}"
-
-    if await is_exist(redis_key):
-        logging.info(f"Retrieving data from Redis by key: {redis_key}")
-        cache = await get_data(redis_key)
-        keyboard_movies = cache
+    if not message.html_text.isalpha():
+        await message.answer(text=unknown_type_message, parse_mode="HTML")
     else:
-        logging.info(f"Making a API request to TMDB API by title: {message.text}")
-        keyboard_movies = await get_movies_by_title(message.text)
-        await set_data(redis_key, keyboard_movies)
+        dialog_manager.dialog_data["user_request"] = message.text
+        logging.info(f"User request: `{message.text}` successfully saved")
 
-    dialog_manager.dialog_data["current_keyboard_movies"] = keyboard_movies
-    dialog_manager.dialog_data["current_keyboard_movies_page"] = 1
+        redis_key = f"keybmovies:{message.text.lower().replace(' ', '')}"
 
-    logging.info(f"Keyboard movies: {keyboard_movies}")
-    await message.delete()
-    await dialog_manager.switch_to(MovieDialogSG.movies_pagination, show_mode=ShowMode.EDIT)
+        if await is_exist(redis_key):
+            logging.info(f"Retrieving data from Redis by key: {redis_key}")
+            cache = await get_data(redis_key)
+            keyboard_movies = cache
+        else:
+            logging.info(f"Making a API request to TMDB API by title: {message.text}")
+            keyboard_movies = await get_movies_by_title(message.text)
+            await set_data(redis_key, keyboard_movies)
+
+        dialog_manager.dialog_data["current_keyboard_movies"] = keyboard_movies
+        dialog_manager.dialog_data["current_keyboard_movies_page"] = 1
+
+        logging.info(f"Keyboard movies: {keyboard_movies}")
+        await message.delete()
+        await dialog_manager.switch_to(MovieDialogSG.movies_pagination, show_mode=ShowMode.EDIT)
 
 
 async def movie_overview_handler(callback: CallbackQuery, widget: Any,
