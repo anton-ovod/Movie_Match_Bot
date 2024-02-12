@@ -1,10 +1,7 @@
-import json
 import logging
 from typing import Union, List
 from datetime import timedelta
 from redis.asyncio.client import Redis
-
-from models.movie import KeyboardMovie
 
 
 redis_instance = Redis(decode_responses=True)

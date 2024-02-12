@@ -110,10 +110,9 @@ async def get_movie_overview_data(dialog_manager: DialogManager, *args, **kwargs
 
     json_data = json.loads(dialog_manager.dialog_data["current_movie"])
     logging.info(f"Movie overview data: {json_data}")
+    logging.info(f"Movie overview data type: {type(json_data)}")
 
-    return {
-        "json_data": json_data
-    }
+    return json_data
 
 
 async def get_list_of_keyboard_movies(dialog_manager: DialogManager, *args, **kwargs):
@@ -141,7 +140,7 @@ async def get_list_of_keyboard_movies(dialog_manager: DialogManager, *args, **kw
     }
 
 
-async def previous_page_handler(callback: CallbackQuery, manager: DialogManager, *args, **kwargs):
+async def previous_page_handler(callback: CallbackQuery, message_input: MessageInput, manager: DialogManager):
     logging.info("Previous page handler")
     if manager.dialog_data["current_keyboard_movies_page"] > 1:
         manager.dialog_data["current_keyboard_movies_page"] -= 1
@@ -149,7 +148,7 @@ async def previous_page_handler(callback: CallbackQuery, manager: DialogManager,
     await callback.answer("Page " + keys_emojis[manager.dialog_data["current_keyboard_movies_page"]])
 
 
-async def next_page_handler(callback: CallbackQuery, manager: DialogManager, *args, **kwargs):
+async def next_page_handler(callback: CallbackQuery, message_input: MessageInput, manager: DialogManager):
     logging.info("Next page handler")
     if manager.dialog_data["current_keyboard_movies_page"] < manager.dialog_data["total_number_of_keyboard_movies"]:
         manager.dialog_data["current_keyboard_movies_page"] += 1

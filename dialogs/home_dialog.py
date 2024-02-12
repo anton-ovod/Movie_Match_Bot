@@ -31,6 +31,7 @@ home_buttons_group = Group(
              on_click=lambda callback, self, manager: callback.answer("⚙️ Settings")),
     width=2
 )
+
 search_options_group = Group(
     Row(
         SwitchTo(Const("🎬  Movie"), id="movie", state=MovieDialogSG.title_request,

@@ -22,7 +22,8 @@ storage = RedisStorage(redis_instance,
                        key_builder=DefaultKeyBuilder(with_destiny=True))
 
 bot = Bot(token=config.bot_token.get_secret_value())
-dp = Dispatcher(storage=storage, event_isolation=RedisEventIsolation(redis=storage.redis))
+dp = Dispatcher(storage=storage,
+                event_isolation=RedisEventIsolation(redis=storage.redis))
 
 
 async def main():
@@ -33,7 +34,7 @@ async def main():
 
     dp.include_routers(home_router, movie_search_router)
     setup_dialogs(dp)
-    await dp.start_polling(bot)
+    await dp.start_polling(bot, skip_updates=True)
 
 
 if __name__ == '__main__':
