@@ -31,7 +31,9 @@ async def get_movies_by_title(title: str) -> list[KeyboardMovie]:
                         release_date = datetime.strptime(result.get("release_date"), "%Y-%m-%d").date()
                     except ValueError:
                         release_date = None
+                    pretty_title = f"{title} ({release_date.year})" if release_date else title
                     movies.append(KeyboardMovie(title=title,
+                                                pretty_title=pretty_title,
                                                 release_date=release_date,
                                                 tmdb_id=tmdb_id))
                 return movies
@@ -56,6 +58,7 @@ async def get_movie_details_tmdb(movie: Movie) -> None:
                     movie.release_date = datetime.strptime(release_date, "%Y-%m-%d").date()
                 else:
                     movie.release_date = None
+                movie.pretty_title = f"{movie.title} ({movie.release_date.year})" if movie.release_date else movie.title
                 if imdb_id := movie_detail.get("imdb_id"):
                     movie.imdb_id = imdb_id
                 if tagline := movie_detail.get("tagline"):
@@ -70,11 +73,11 @@ async def get_movie_details_tmdb(movie: Movie) -> None:
                             movie.trailer_url = f'{config.base_video_url.get_secret_value()}{video.get("key")}'
                             break
                     else:
-                        movie.trailer_url = (f'{config.youtube_search_url.get_secret_value()}trailer'
-                                             f'{movie.pretty_title.split(" (")[0].replace(" ", "+")}')
+                        movie.trailer_url = (f'{config.youtube_search_url.get_secret_value()}trailer+'
+                                             f'{movie.title.replace(" ", "+")}')
                 else:
-                    movie.trailer_url = (f'{config.youtube_search_url.get_secret_value()}trailer'
-                                         f'{movie.pretty_title.split(" (")[0].replace(" ", "+")}')
+                    movie.trailer_url = (f'{config.youtube_search_url.get_secret_value()}trailer+'
+                                         f'{movie.title.replace(" ", "+")}')
                 if genres := movie_detail.get("genres"):
                     movie.genres = [genre.get("name") for genre in genres]
                 if runtime := movie_detail.get("runtime"):
@@ -114,7 +117,6 @@ async def get_recommendations_by_id(imdb_id: int) -> List[KeyboardMovie]:
             }
             async with session.get(movie_recommendations_url, params=params) as response:
                 data = await response.json()
-                results = data.get("results")
                 results = sorted(data.get("results"), key=lambda x: x.get("popularity"), reverse=True)
                 recommendations = []
                 for result in results:

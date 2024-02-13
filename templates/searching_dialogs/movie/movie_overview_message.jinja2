@@ -1,1 +1,94 @@
-{{ title }}
+{% set rating_characters = {
+    0: "🌑🌑🌑🌑🌑",
+    0.5: "🌗🌑🌑🌑🌑",
+    1: "🌕🌑🌑🌑🌑",
+    1.5: "🌕🌗🌑🌑🌑",
+    2: "🌕🌕🌑🌑🌑",
+    2.5: "🌕🌕🌗🌑🌑",
+    3: "🌕🌕🌕🌑🌑",
+    3.5: "🌕🌕🌕🌗🌑",
+    4: "🌕🌕🌕🌕🌑",
+    4.5: "🌕🌕🌕🌕🌗",
+    5: "🌕🌕🌕🌕🌕"
+} %}
+
+{% if poster_url %}
+    <a href="{{ poster_url }}"><b>{{ pretty_title }}</b></a>
+{% elif self.imdb_url %}
+    <a href="{{ imdb_url }}"><b>{{ pretty_title }}</b></a>
+{% else %}
+    <a href="{{ tmdb_url }}"><b>{{ pretty_title }}</b></a>
+{% endif -%}
+{% if tagline -%}
+    <i>{{ tagline }}</i>
+{% endif %}
+
+{% if genres -%}
+    {%- for genre in genres -%}
+        {{ '#'+genre.replace(' ', '')+' ' }}
+    {%- endfor %}
+{% endif %}
+
+{% if overview -%}
+    {{ overview }}
+{% endif %}
+
+{% if ratings -%}
+    {% if ratings|length == 1 -%}
+        Average rating: <b>{{ ratings[0].value }}</b>
+    {%- else -%}
+        {% set average_star_rating = (((ratings[-1].value / 20) * 2)|round) / 2 -%}
+        <b>Average rating: {{ rating_characters[average_star_rating] }} • {{ ratings[-1].value }}</b>
+        {{- '\n' -}}
+        {%- for rating in ratings[:-1] %}
+            {%- if rating.source == "TMDb" -%}
+                <a href="{{ tmdb_url }}">TMDb</a>: {{ rating.value -}}
+                {{- '\n' -}}
+            {% endif %}
+
+            {%- if rating.source == "IMDB" -%}
+                <a href="{{ imdb_url }}">IMDb</a>: {{ rating.value -}}
+                {{- '\n' -}}
+            {% endif %}
+            {%- if rating.source == "Rotten Tomatoes" -%}
+                <a href="{{ rotten_tomatoes_url }}">Rotten Tomatoes</a>: {{ rating.value -}}
+                {{- '\n' -}}
+            {% endif %}
+            {%- if rating.source == "Metacritic" -%}
+                <a href="{{ metacritic_url }}">Metacritic</a>: {{ rating.value -}}
+                {{- '\n' -}}
+            {% endif %}
+        {%- endfor -%}
+    {%- endif -%}
+{%- endif %}
+
+{% if awards -%}
+    <b>Awards:</b> {{ awards }}.
+{% endif %}
+
+{% if cast -%}
+    <b>Director:</b> <a href="{{ cast[-1].profile_url }}">{{ cast[-1].name }}</a>
+{% endif %}
+
+{% if cast[:-1] -%}
+    <b>Actors:</b>
+    {{- '\n' -}}
+    {%- for actor in cast[:-1] -%}
+        <a href="{{ actor.profile_url }}"><i>{{ actor.name }}</i></a> as {{ actor.character -}}
+        {{- '\n' -}}
+    {% endfor %}
+{% endif %}
+
+{% if age_categories -%}
+    {{ age_categories }}
+    {%- if runtime or countries %} | {% endif %}
+{% endif %}
+{%- if runtime -%}
+    {{ runtime }} min
+    {%- if countries %} | {% endif %}
+{% endif %}
+{%- if countries -%}
+    {{ ', '.join(countries) }}
+{% endif %}
+
+

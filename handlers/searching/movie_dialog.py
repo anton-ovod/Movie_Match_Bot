@@ -109,9 +109,6 @@ async def get_movie_overview_data(dialog_manager: DialogManager, *args, **kwargs
     """
 
     json_data = json.loads(dialog_manager.dialog_data["current_movie"])
-    logging.info(f"Movie overview data: {json_data}")
-    logging.info(f"Movie overview data type: {type(json_data)}")
-
     return json_data
 
 

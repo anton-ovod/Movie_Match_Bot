@@ -1,37 +1,18 @@
-import json
 from typing import List
 from pydantic import BaseModel, PositiveInt
 from datetime import date
 
 from config_reader import config
 
-rating_characters = {
-    0: "🌑🌑🌑🌑🌑",
-    0.5: "🌗🌑🌑🌑🌑",
-    1: "🌕🌑🌑🌑🌑",
-    1.5: "🌕🌗🌑🌑🌑",
-    2: "🌕🌕🌑🌑🌑",
-    2.5: "🌕🌕🌗🌑🌑",
-    3: "🌕🌕🌕🌑🌑",
-    3.5: "🌕🌕🌕🌗🌑",
-    4: "🌕🌕🌕🌕🌑",
-    4.5: "🌕🌕🌕🌕🌗",
-    5: "🌕🌕🌕🌕🌕"
-}
-
-
 class KeyboardMovie(BaseModel):
     # Data is getting from tmdb api
     title: str = None
     release_date: date | None = None
+    pretty_title: str = None
     tmdb_id: PositiveInt = None
 
     def __getitem__(self, item):
         return getattr(self, item)
-
-    @property
-    def pretty_title(self) -> str:
-        return self.title + f" ({self.release_date.year})" if self.release_date else self.title
 
     @property
     def json_data(self) -> str:
@@ -128,10 +109,9 @@ class Movie(KeyboardMovie):
                                            f"{title.lower()}")
 
     @property
-    def movie_overview_data(self) -> str:
+    def json_data(self) -> str:
         self.calculate_average_rating()
         self.create_links()
-
         return self.model_dump_json()
 
         # message = ""
