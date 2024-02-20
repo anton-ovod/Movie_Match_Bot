@@ -1,10 +1,9 @@
-import json
 import operator
 
 from aiogram.types import ContentType
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Back, Cancel, Group, Select, Row, Column, Button
+from aiogram_dialog.widgets.kbd import Back, Cancel, Group, Select, Row, Column, Button, Url
 from aiogram_dialog.widgets.text import Const, Format, Jinja
 
 from dialogs.searching import env
@@ -37,7 +36,7 @@ keyboard_movies_navigation_group = Group(
              callback.answer("🤖 I'm ready to search for movies!")
              ),
         when=lambda _, __, dialog_manager:
-        dialog_manager.dialog_data["total_number_of_keyboard_movies"] == 1
+        dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] == 1
 
     ),
 
@@ -49,7 +48,7 @@ keyboard_movies_navigation_group = Group(
                on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
         Button(Format("{next_page}"), id="next_page", on_click=next_page_handler),
         when=lambda _, __, dialog_manager: dialog_manager.dialog_data["current_keyboard_movies_page"] == 1 and
-                                           dialog_manager.dialog_data["total_number_of_keyboard_movies"] > 1
+                                           dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] > 1
     ),
 
     Row(
@@ -57,8 +56,8 @@ keyboard_movies_navigation_group = Group(
         Cancel(Const("🕵️ Search"), id="search",
                on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
         when=lambda _, __, dialog_manager: dialog_manager.dialog_data["current_keyboard_movies_page"] ==
-                                           dialog_manager.dialog_data["total_number_of_keyboard_movies"] and
-                                           dialog_manager.dialog_data["total_number_of_keyboard_movies"] > 1
+                                           dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] and
+                                           dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] > 1
 
     ),
 
@@ -68,9 +67,18 @@ keyboard_movies_navigation_group = Group(
                on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
         Button(Format("{next_page}"), id="next_page", on_click=next_page_handler),
         when=lambda _, __, dialog_manager: dialog_manager.dialog_data["current_keyboard_movies_page"] !=
-                                           dialog_manager.dialog_data["total_number_of_keyboard_movies"] > 1 !=
+                                           dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] > 1 !=
                                            dialog_manager.dialog_data["current_keyboard_movies_page"]
 
+    )
+
+)
+
+movie_overview_group = Group(
+    Url(
+        Const("🎬 Homepage"),
+        Format("{imdb_url}"),
+        when=lambda movie_data, __, dialog_manager: movie_data.get("imdb_url")
     )
 
 )
@@ -98,6 +106,7 @@ movie_dialog = Dialog(
     ),
     Window(
         Jinja(movie_overview_message),
+        movie_overview_group,
         Back(Const("⬅️  Back")),
         MessageInput(message_handler),
         state=MovieDialogSG.movie_overview,

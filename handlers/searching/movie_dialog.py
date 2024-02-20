@@ -60,6 +60,10 @@ async def title_request_handler(message: Message, message_input: MessageInput,
         else:
             logging.info(f"Making a API request to TMDB API by title: {message.text}")
             results = await get_movies_by_title(message.text)
+            if not results:
+                # TODO: no_results_message need to be added
+                await message.answer("No movies found")
+                return
             keyboard_movies = [movie.json_data for movie in results]
             await set_data(redis_key, keyboard_movies)
 
@@ -117,7 +121,7 @@ async def get_list_of_keyboard_movies(dialog_manager: DialogManager, *args, **kw
                        for item in dialog_manager.dialog_data["current_keyboard_movies"]]
 
     number_of_pages = math.ceil(len(keyboard_movies) / 10)
-    dialog_manager.dialog_data["total_number_of_keyboard_movies"] = number_of_pages
+    dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] = number_of_pages
 
     keyboard_movies = keyboard_movies[(dialog_manager.dialog_data["current_keyboard_movies_page"] - 1) * 10:
                                       dialog_manager.dialog_data["current_keyboard_movies_page"] * 10]
@@ -147,7 +151,7 @@ async def previous_page_handler(callback: CallbackQuery, message_input: MessageI
 
 async def next_page_handler(callback: CallbackQuery, message_input: MessageInput, manager: DialogManager):
     logging.info("Next page handler")
-    if manager.dialog_data["current_keyboard_movies_page"] < manager.dialog_data["total_number_of_keyboard_movies"]:
+    if manager.dialog_data["current_keyboard_movies_page"] < manager.dialog_data["total_number_of_keyboard_movies_pages"]:
         manager.dialog_data["current_keyboard_movies_page"] += 1
     await manager.update(data=manager.dialog_data, show_mode=ShowMode.EDIT)
     await callback.answer("Page " + keys_emojis[manager.dialog_data["current_keyboard_movies_page"]])

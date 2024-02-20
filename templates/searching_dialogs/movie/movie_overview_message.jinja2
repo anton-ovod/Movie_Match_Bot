@@ -21,15 +21,17 @@
 {% endif -%}
 {% if tagline -%}
     <i>{{ tagline }}</i>
-{% endif %}
+{% endif -%}
 
 {% if genres -%}
+    {{- '\n' -}}
     {%- for genre in genres -%}
         {{ '#'+genre.replace(' ', '')+' ' }}
     {%- endfor %}
-{% endif %}
+{% endif -%}
 
 {% if overview -%}
+    {{- '\n' -}}
     {{ overview }}
 {% endif %}
 
@@ -60,21 +62,27 @@
             {% endif %}
         {%- endfor -%}
     {%- endif -%}
-{%- endif %}
+{%- endif -%}
 
 {% if awards -%}
+    {{- '\n' -}}
     <b>Awards:</b> {{ awards }}.
-{% endif %}
+{% endif -%}
 
 {% if cast -%}
+    {{- '\n' -}}
     <b>Director:</b> <a href="{{ cast[-1].profile_url }}">{{ cast[-1].name }}</a>
-{% endif %}
+{% endif -%}
 
 {% if cast[:-1] -%}
+    {{- '\n' -}}
     <b>Actors:</b>
     {{- '\n' -}}
     {%- for actor in cast[:-1] -%}
-        <a href="{{ actor.profile_url }}"><i>{{ actor.name }}</i></a> as {{ actor.character -}}
+        <a href="{{ actor.profile_url }}"><i>{{ actor.name }}</i></a>
+        {%- if actor.character -%}
+              {{ ' as ' + actor.character -}}
+        {%- endif -%}
         {{- '\n' -}}
     {% endfor %}
 {% endif %}
