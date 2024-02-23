@@ -12,7 +12,7 @@ from aiogram_dialog.widgets.kbd import Button
 from misc.states import MovieDialogSG
 
 from utils.caching_handlers import get_data, set_data, is_exist
-from utils.tmdb_api import get_movies_by_title, get_movie_details_tmdb
+from utils.tmdb_api import get_movies_by_title, get_movie_details_tmdb, get_suggestions_by_id
 from utils.omdb_api import get_movie_details_omdb
 
 from models.movie import KeyboardMovie, Movie
@@ -53,6 +53,8 @@ async def title_request_handler(message: Message, message_input: MessageInput,
         logging.info(f"User request: `{message.text}` successfully saved")
 
         dialog_manager.dialog_data["current_keyboard_movies_page"] = 1
+        if "suggestions_depth_stack" not in dialog_manager.dialog_data:
+            dialog_manager.dialog_data["suggestions_depth_stack"] = []
 
         await message.delete()
         await dialog_manager.switch_to(MovieDialogSG.movies_pagination, show_mode=ShowMode.EDIT)
@@ -68,6 +70,25 @@ async def movie_overview_handler(callback: CallbackQuery, button: Button, dialog
 
     await dialog_manager.switch_to(MovieDialogSG.movie_overview, show_mode=ShowMode.EDIT)
     await callback.answer("🎬 Movie overview")
+
+
+async def go_to_previous_movie(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    dialog_manager.dialog_data["current_movie_tmdb_id"] = dialog_manager.dialog_data[
+        "suggestions_depth_stack"].pop()
+    await dialog_manager.switch_to(MovieDialogSG.movie_overview, show_mode=ShowMode.EDIT)
+    await callback.answer("🎬 Movie overview")
+
+
+async def go_to_previous_movie_suggestions(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    dialog_manager.dialog_data["current_movie_tmdb_id"] = dialog_manager.dialog_data[
+        "suggestions_depth_stack"][-1]
+
+    previous_movie_data = await get_data(f"movieoverview:{dialog_manager.dialog_data['current_movie_tmdb_id']}")
+    previous_movie= Movie(**(json.loads(previous_movie_data)))
+    dialog_manager.dialog_data["current_movie_pretty_title"] = previous_movie.pretty_title
+
+    await dialog_manager.switch_to(MovieDialogSG.movie_suggestions, show_mode=ShowMode.EDIT)
+    await callback.answer("🎬 Movie suggestions")
 
 
 async def get_movie_overview_data(dialog_manager: DialogManager, *args, **kwargs) -> dict:
@@ -95,11 +116,12 @@ async def get_movie_overview_data(dialog_manager: DialogManager, *args, **kwargs
             await get_movie_details_omdb(movie)
         await set_data(redis_key, movie.json_data)
 
+    dialog_manager.dialog_data["current_movie_pretty_title"] = movie.pretty_title
     dump_data = movie.model_dump()
     return dump_data
 
 
-async def get_list_of_keyboard_movies(dialog_manager: DialogManager, *args, **kwargs):
+async def get_list_of_keyboard_movies(dialog_manager: DialogManager, *args, **kwargs) -> dict:
     user_request = dialog_manager.dialog_data["user_request"]
     dialog_manager.dialog_data["current_movie_tmdb_id"] = None
 
@@ -157,19 +179,50 @@ async def next_page_handler(callback: CallbackQuery, message_input: MessageInput
 async def movie_suggestions_handler(callback: CallbackQuery, button: Button, dialog_manager: DialogManager,
                                     *args, **kwargs):
     logging.info("Movie suggestions handler")
-    await dialog_manager.switch_to(MovieDialogSG.movie_suggestions, show_mode=ShowMode.SEND)
+    dialog_manager.dialog_data["current_keyboard_movies_page"] = 1
+
+    dialog_manager.dialog_data["suggestions_depth_stack"].append(
+        dialog_manager.dialog_data["current_movie_tmdb_id"])
+
+    await dialog_manager.switch_to(MovieDialogSG.movie_suggestions, show_mode=ShowMode.EDIT)
     await callback.answer("🎬 Movie suggestions")
 
 
-# async def get_list_of_movie_suggestions(dialog_manager: DialogManager, *args, **kwargs):
-#     movie = Movie(**(json.loads(dialog_manager.dialog_data["current_movie"]))
-#                   )
-#
-#
-#
-#     return {
-#         "suggestions": suggestions
-#     }
+async def get_list_of_movie_suggestions(dialog_manager: DialogManager, *args, **kwargs) -> dict:
+    current_movie_tmdb_id = dialog_manager.dialog_data["current_movie_tmdb_id"]
+
+    redis_key = f"keybmoviesuggestions:{current_movie_tmdb_id}"
+
+    if await is_exist(redis_key):
+        logging.info(f"Retrieving data from Redis by key: {redis_key}")
+        cache = await get_data(redis_key)
+        suggestions = [KeyboardMovie(**(json.loads(item))) for item in cache]
+    else:
+        logging.info(f"Making a API request to TMDB API by movie id: {current_movie_tmdb_id}")
+        suggestions = await get_suggestions_by_id(current_movie_tmdb_id)
+        cache = [movie.json_data for movie in suggestions]
+        await set_data(redis_key, cache)
+
+    number_of_pages = math.ceil(len(suggestions) / 10)
+
+    dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] = number_of_pages
+
+    keyboard_movies = suggestions[(dialog_manager.dialog_data["current_keyboard_movies_page"] - 1) * 10:
+                                  dialog_manager.dialog_data["current_keyboard_movies_page"] * 10]
+
+    next_page_number = dialog_manager.dialog_data["current_keyboard_movies_page"] + 1 if \
+        dialog_manager.dialog_data["current_keyboard_movies_page"] + 1 <= number_of_pages \
+        else number_of_pages
+
+    prev_page_number = dialog_manager.dialog_data["current_keyboard_movies_page"] - 1 if \
+        dialog_manager.dialog_data["current_keyboard_movies_page"] - 1 > 0 \
+        else 1
+
+    return {
+        "keyboard_movies": keyboard_movies,
+        "next_page": keys_emojis[next_page_number],
+        "prev_page": keys_emojis[prev_page_number],
+    }
 
 
 async def message_handler(message: Message, message_input: MessageInput, dialog_manager: DialogManager):

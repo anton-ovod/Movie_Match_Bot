@@ -105,11 +105,11 @@ async def get_movie_details_tmdb(movie: Movie) -> None:
         logging.error(f"Error while getting movie details(TMDB): {e}")
 
 
-async def get_recommendations_by_id(imdb_id: int) -> List[KeyboardMovie]:
+async def get_suggestions_by_id(imdb_id: int) -> List[KeyboardMovie]:
     try:
         async with aiohttp.ClientSession() as session:
             movie_recommendations_url = (f"{config.movie_details_url.get_secret_value()}"
-                                         f"{imdb_id}/recommendations")
+                                         f"{imdb_id}/similar")
             params = {
                 "api_key": config.api_key.get_secret_value(),
                 "language": "en-US",
@@ -126,8 +126,9 @@ async def get_recommendations_by_id(imdb_id: int) -> List[KeyboardMovie]:
                         release_date = datetime.strptime(result.get("release_date"), "%Y-%m-%d").date()
                     except ValueError:
                         release_date = None
-
+                    pretty_title = f"{title} ({release_date.year})" if release_date else title
                     recommendations.append(KeyboardMovie(title=title,
+                                                         pretty_title=pretty_title,
                                                          release_date=release_date,
                                                          tmdb_id=tmdb_id))
                 return recommendations

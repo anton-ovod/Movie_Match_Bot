@@ -9,7 +9,9 @@ from aiogram_dialog.widgets.text import Const, Format, Jinja
 from dialogs.searching import env
 from handlers.searching.movie_dialog import (title_request_handler, unknown_message_handler, message_handler,
                                              get_list_of_keyboard_movies, movie_overview_handler, next_page_handler,
-                                             previous_page_handler, get_movie_overview_data, movie_suggestions_handler)
+                                             previous_page_handler, get_movie_overview_data, movie_suggestions_handler,
+                                             get_list_of_movie_suggestions, go_to_previous_movie,
+                                             go_to_previous_movie_suggestions)
 from misc.states import MovieDialogSG
 
 title_request_message = env.get_template("movie_search_message.jinja2")
@@ -32,19 +34,33 @@ keyboard_movies_group = Group(
 keyboard_movies_navigation_group = Group(
 
     Row(
-        Back(Const("⬅️  Back"), id="back",
+        Back(Const("⬅️  Back"),
              on_click=lambda callback, self, manager:
-             callback.answer("🤖 I'm ready to search for movies!")
+             callback.answer("🤖 I'm ready to search for movies!"),
+             when=lambda _, __, dialog_manager:
+             not dialog_manager.dialog_data["suggestions_depth_stack"]
              ),
+        Button(Const("⬅️  Back"), id="back",
+               on_click=go_to_previous_movie,
+               when=lambda _, __, dialog_manager:
+               dialog_manager.dialog_data["suggestions_depth_stack"]
+               ),
         when=lambda _, __, dialog_manager:
         dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] == 1
-
     ),
 
     Row(
-        Back(Const("⬅️  Back"), id="back",
+        Back(Const("⬅️  Back"),
              on_click=lambda callback, self, manager:
-             callback.answer("🤖 I'm ready to search for movies!")),
+             callback.answer("🤖 I'm ready to search for movies!"),
+             when=lambda _, __, dialog_manager:
+             not dialog_manager.dialog_data["suggestions_depth_stack"]
+             ),
+        Button(Const("⬅️  Back"), id="back",
+               on_click=go_to_previous_movie,
+               when=lambda _, __, dialog_manager:
+               dialog_manager.dialog_data["suggestions_depth_stack"]
+               ),
         Cancel(Const("🕵️ Search"), id="search",
                on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
         Button(Format("{next_page}"), id="next_page", on_click=next_page_handler),
@@ -100,13 +116,22 @@ movie_overview_group = Group(
     Button(Const("🗂 Suggestions"), id="suggestions",
            on_click=movie_suggestions_handler),
 
-    Button(Const("📽 Availability"), id="availability", on_click=lambda callback, self, manager:
-    callback.answer("📽 Availability")),
+    Button(Const("📽 Availability"), id="availability",
+           on_click=lambda callback, self, manager: callback.answer("📽 Availability")),
 
-    Back(Const("⬅️  Back")),
+    Back(Const("⬅️  Back"),
+         on_click=lambda callback, self, manager: callback.answer("🔍 Search"),
+         when=lambda _, __, dialog_manager: not dialog_manager.dialog_data["suggestions_depth_stack"]
+         ),
 
-    Button(Const("🤲 Share"), id="share", on_click=lambda callback, self, manager:
-    callback.answer("🤲 Share")),
+    Button(Const("⬅️  Back"),
+           id="back",
+           on_click=go_to_previous_movie_suggestions,
+           when=lambda _, __, dialog_manager: dialog_manager.dialog_data["suggestions_depth_stack"]
+           ),
+
+    Button(Const("🤲 Share"), id="share",
+           on_click=lambda callback, self, manager: callback.answer("🤲 Share")),
 
     width=2
 )
@@ -142,7 +167,10 @@ movie_dialog = Dialog(
     ),
     Window(
         Jinja(movie_suggestions_message),
-        Back(Const("Close")),
+        keyboard_movies_group,
+        keyboard_movies_navigation_group,
+        MessageInput(message_handler),
+        getter=get_list_of_movie_suggestions,
         state=MovieDialogSG.movie_suggestions,
         parse_mode="HTML",
     )
