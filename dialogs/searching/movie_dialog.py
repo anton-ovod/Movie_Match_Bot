@@ -89,7 +89,25 @@ movie_overview_group = Group(
         Const("🎬 Homepage"),
         Format("{tmdb_url}"),
         when=lambda movie_data, _, __: not movie_data.get("homepage") and not movie_data.get("imdb_url")
-    )
+    ),
+    Url(
+        Const("🎞 Trailer"),
+        Format("{trailer_url}"),
+        when=lambda movie_data, _, __: movie_data.get("trailer_url")
+    ),
+
+    Button(Const("🗂 Suggestions"), id="recommendations", on_click=lambda callback, self, manager:
+           callback.answer("🗂 Suggestions")),
+
+    Button(Const("📽 Availability"), id="availability", on_click=lambda callback, self, manager:
+           callback.answer("📽 Availability")),
+
+    Back(Const("⬅️  Back")),
+
+    Button(Const("🤲 Share"), id="share", on_click=lambda callback, self, manager:
+           callback.answer("🤲 Share")),
+
+    width=2
 )
 
 movie_dialog = Dialog(
@@ -116,7 +134,6 @@ movie_dialog = Dialog(
     Window(
         Jinja(movie_overview_message),
         movie_overview_group,
-        Back(Const("⬅️  Back")),
         MessageInput(message_handler),
         state=MovieDialogSG.movie_overview,
         getter=get_movie_overview_data,
