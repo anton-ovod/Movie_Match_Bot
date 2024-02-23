@@ -77,10 +77,19 @@ keyboard_movies_navigation_group = Group(
 movie_overview_group = Group(
     Url(
         Const("🎬 Homepage"),
+        Format("{homepage}"),
+        when=lambda movie_data, _, __: movie_data.get("homepage")
+    ),
+    Url(
+        Const("🎬 Homepage"),
         Format("{imdb_url}"),
-        when=lambda movie_data, __, dialog_manager: movie_data.get("imdb_url")
+        when=lambda movie_data, _, __: not movie_data.get("homepage") and movie_data.get("imdb_url")
+    ),
+    Url(
+        Const("🎬 Homepage"),
+        Format("{tmdb_url}"),
+        when=lambda movie_data, _, __: not movie_data.get("homepage") and not movie_data.get("imdb_url")
     )
-
 )
 
 movie_dialog = Dialog(
