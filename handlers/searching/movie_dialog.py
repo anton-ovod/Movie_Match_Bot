@@ -22,7 +22,7 @@ from dialogs.searching import env
 movie_search_router = Router()
 
 unknown_type_message = env.get_template("unknown_type_message.jinja2").render()
-
+no_results_message = env.get_template("no_results_message.jinja2").render()
 keys_emojis = {
     1: "1️⃣",
     2: "2️⃣",
@@ -45,7 +45,7 @@ async def init_movie_search_dialog(callback: CallbackQuery, button: Button, dial
 
 async def title_request_handler(message: Message, message_input: MessageInput,
                                 dialog_manager: DialogManager):
-    if not message.html_text.isalpha():
+    if not message.html_text.isascii():
         await message.answer(text=unknown_type_message, parse_mode="HTML")
     else:
         dialog_manager.dialog_data["user_request"] = message.text
@@ -61,8 +61,7 @@ async def title_request_handler(message: Message, message_input: MessageInput,
             logging.info(f"Making a API request to TMDB API by title: {message.text}")
             results = await get_movies_by_title(message.text)
             if not results:
-                # TODO: no_results_message need to be added
-                await message.answer("No movies found")
+                await message.answer(text=no_results_message, parse_mode="HTML")
                 return
             keyboard_movies = [movie.json_data for movie in results]
             await set_data(redis_key, keyboard_movies)
