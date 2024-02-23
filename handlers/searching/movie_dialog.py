@@ -47,29 +47,13 @@ async def title_request_handler(message: Message, message_input: MessageInput,
                                 dialog_manager: DialogManager):
     if not message.html_text.isascii():
         await message.answer(text=unknown_type_message, parse_mode="HTML")
+
     else:
         dialog_manager.dialog_data["user_request"] = message.text
         logging.info(f"User request: `{message.text}` successfully saved")
 
-        redis_key = f"keybmovies:{message.text.lower().replace(' ', '')}"
-
-        if await is_exist(redis_key):
-            logging.info(f"Retrieving data from Redis by key: {redis_key}")
-            cache = await get_data(redis_key)
-            keyboard_movies = cache
-        else:
-            logging.info(f"Making a API request to TMDB API by title: {message.text}")
-            results = await get_movies_by_title(message.text)
-            if not results:
-                await message.answer(text=no_results_message, parse_mode="HTML")
-                return
-            keyboard_movies = [movie.json_data for movie in results]
-            await set_data(redis_key, keyboard_movies)
-
-        dialog_manager.dialog_data["current_keyboard_movies"] = keyboard_movies
         dialog_manager.dialog_data["current_keyboard_movies_page"] = 1
 
-        logging.info(f"Keyboard movies: {keyboard_movies}")
         await message.delete()
         await dialog_manager.switch_to(MovieDialogSG.movies_pagination, show_mode=ShowMode.EDIT)
 
@@ -77,24 +61,10 @@ async def title_request_handler(message: Message, message_input: MessageInput,
 async def movie_overview_handler(callback: CallbackQuery, button: Button, dialog_manager: DialogManager,
                                  *args, **kwargs):
     movie_tmdb_id = callback.data.split(':')[1]
+
     logging.info(f"Movie overview handler: {movie_tmdb_id}")
 
-    redis_key = f"movieoverview:{movie_tmdb_id}"
-
-    if await is_exist(redis_key):
-        logging.info(f"Retrieving data from Redis by key: {redis_key}")
-        cache = await get_data(redis_key)
-        movie = Movie(**(json.loads(cache)))
-    else:
-        logging.info(f"Making a API request to TMDB API by movie id: {movie_tmdb_id}")
-        movie = Movie(tmdb_id=movie_tmdb_id)
-        await get_movie_details_tmdb(movie)
-        if movie.imdb_id:
-            await get_movie_details_omdb(movie)
-        await set_data(redis_key, movie.json_data)
-
-    logging.info(f"Movie: {movie.json_data}")
-    dialog_manager.dialog_data["current_movie"] = movie.json_data
+    dialog_manager.dialog_data["current_movie_tmdb_id"] = movie_tmdb_id
 
     await dialog_manager.switch_to(MovieDialogSG.movie_overview, show_mode=ShowMode.EDIT)
     await callback.answer("🎬 Movie overview")
@@ -110,14 +80,41 @@ async def get_movie_overview_data(dialog_manager: DialogManager, *args, **kwargs
     :return:  Movie overview data.
 
     """
+    movie_tmdb_id = dialog_manager.dialog_data["current_movie_tmdb_id"]
+    redis_key = f"movieoverview:{movie_tmdb_id}"
 
-    json_data = json.loads(dialog_manager.dialog_data["current_movie"])
-    return json_data
+    if await is_exist(redis_key):
+        logging.info(f"Retrieving data from Redis by key: {redis_key}")
+        cache = await get_data(redis_key)
+        movie = Movie(**(json.loads(cache)))
+    else:
+        logging.info(f"Making a API request to TMDB API by movie id: {movie_tmdb_id}")
+        movie = Movie(tmdb_id=movie_tmdb_id)
+        await get_movie_details_tmdb(movie)
+        if movie.imdb_id:
+            await get_movie_details_omdb(movie)
+        await set_data(redis_key, movie.json_data)
+
+    dump_data = movie.model_dump()
+    return dump_data
 
 
 async def get_list_of_keyboard_movies(dialog_manager: DialogManager, *args, **kwargs):
-    keyboard_movies = [KeyboardMovie(**(json.loads(item)))
-                       for item in dialog_manager.dialog_data["current_keyboard_movies"]]
+    user_request = dialog_manager.dialog_data["user_request"]
+    dialog_manager.dialog_data["current_movie_tmdb_id"] = None
+
+    redis_key = f"keybmovies:{user_request.lower().replace(' ', '')}"
+
+    if await is_exist(redis_key):
+        logging.info(f"Retrieving data from Redis by key: {redis_key}")
+        cache = await get_data(redis_key)
+        keyboard_movies = [KeyboardMovie(**(json.loads(item)))
+                           for item in cache]
+    else:
+        logging.info(f"Making a API request to TMDB API by title: {user_request}")
+        keyboard_movies = await get_movies_by_title(user_request)
+        cache = [movie.json_data for movie in keyboard_movies]
+        await set_data(redis_key, cache)
 
     number_of_pages = math.ceil(len(keyboard_movies) / 10)
     dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] = number_of_pages
@@ -150,8 +147,8 @@ async def previous_page_handler(callback: CallbackQuery, message_input: MessageI
 
 async def next_page_handler(callback: CallbackQuery, message_input: MessageInput, manager: DialogManager):
     logging.info("Next page handler")
-    if manager.dialog_data["current_keyboard_movies_page"] < manager.dialog_data[
-        "total_number_of_keyboard_movies_pages"]:
+    if (manager.dialog_data["current_keyboard_movies_page"] <
+            manager.dialog_data["total_number_of_keyboard_movies_pages"]):
         manager.dialog_data["current_keyboard_movies_page"] += 1
     await manager.update(data=manager.dialog_data, show_mode=ShowMode.EDIT)
     await callback.answer("Page " + keys_emojis[manager.dialog_data["current_keyboard_movies_page"]])
@@ -162,6 +159,17 @@ async def movie_suggestions_handler(callback: CallbackQuery, button: Button, dia
     logging.info("Movie suggestions handler")
     await dialog_manager.switch_to(MovieDialogSG.movie_suggestions, show_mode=ShowMode.SEND)
     await callback.answer("🎬 Movie suggestions")
+
+
+# async def get_list_of_movie_suggestions(dialog_manager: DialogManager, *args, **kwargs):
+#     movie = Movie(**(json.loads(dialog_manager.dialog_data["current_movie"]))
+#                   )
+#
+#
+#
+#     return {
+#         "suggestions": suggestions
+#     }
 
 
 async def message_handler(message: Message, message_input: MessageInput, dialog_manager: DialogManager):
