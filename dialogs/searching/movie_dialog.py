@@ -3,18 +3,19 @@ import operator
 from aiogram.types import ContentType
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Back, Cancel, Group, Select, Row, Column, Button, Url
+from aiogram_dialog.widgets.kbd import Back, Cancel, Group, Select, Row, Column, Button, Url, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format, Jinja
 
 from dialogs.searching import env
 from handlers.searching.movie_dialog import (title_request_handler, unknown_message_handler, message_handler,
                                              get_list_of_keyboard_movies, movie_overview_handler, next_page_handler,
-                                             previous_page_handler, get_movie_overview_data)
+                                             previous_page_handler, get_movie_overview_data, movie_suggestions_handler)
 from misc.states import MovieDialogSG
 
 title_request_message = env.get_template("movie_search_message.jinja2")
 results_message = env.get_template("results_message.jinja2")
 movie_overview_message = env.get_template("movie_overview_message.jinja2")
+movie_suggestions_message = env.get_template("movie_suggestions_message.jinja2")
 
 keyboard_movies_group = Group(
     Column(
@@ -96,16 +97,16 @@ movie_overview_group = Group(
         when=lambda movie_data, _, __: movie_data.get("trailer_url")
     ),
 
-    Button(Const("🗂 Suggestions"), id="recommendations", on_click=lambda callback, self, manager:
-           callback.answer("🗂 Suggestions")),
+    Button(Const("🗂 Suggestions"), id="suggestions",
+           on_click=movie_suggestions_handler),
 
     Button(Const("📽 Availability"), id="availability", on_click=lambda callback, self, manager:
-           callback.answer("📽 Availability")),
+    callback.answer("📽 Availability")),
 
     Back(Const("⬅️  Back")),
 
     Button(Const("🤲 Share"), id="share", on_click=lambda callback, self, manager:
-           callback.answer("🤲 Share")),
+    callback.answer("🤲 Share")),
 
     width=2
 )
@@ -137,6 +138,12 @@ movie_dialog = Dialog(
         MessageInput(message_handler),
         state=MovieDialogSG.movie_overview,
         getter=get_movie_overview_data,
+        parse_mode="HTML",
+    ),
+    Window(
+        Jinja(movie_suggestions_message),
+        Back(Const("Close")),
+        state=MovieDialogSG.movie_suggestions,
         parse_mode="HTML",
     )
 )

@@ -150,10 +150,18 @@ async def previous_page_handler(callback: CallbackQuery, message_input: MessageI
 
 async def next_page_handler(callback: CallbackQuery, message_input: MessageInput, manager: DialogManager):
     logging.info("Next page handler")
-    if manager.dialog_data["current_keyboard_movies_page"] < manager.dialog_data["total_number_of_keyboard_movies_pages"]:
+    if manager.dialog_data["current_keyboard_movies_page"] < manager.dialog_data[
+        "total_number_of_keyboard_movies_pages"]:
         manager.dialog_data["current_keyboard_movies_page"] += 1
     await manager.update(data=manager.dialog_data, show_mode=ShowMode.EDIT)
     await callback.answer("Page " + keys_emojis[manager.dialog_data["current_keyboard_movies_page"]])
+
+
+async def movie_suggestions_handler(callback: CallbackQuery, button: Button, dialog_manager: DialogManager,
+                                    *args, **kwargs):
+    logging.info("Movie suggestions handler")
+    await dialog_manager.switch_to(MovieDialogSG.movie_suggestions, show_mode=ShowMode.SEND)
+    await callback.answer("🎬 Movie suggestions")
 
 
 async def message_handler(message: Message, message_input: MessageInput, dialog_manager: DialogManager):
