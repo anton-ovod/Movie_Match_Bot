@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 from pydantic import BaseModel, PositiveInt
 from datetime import date
 
@@ -31,6 +31,11 @@ class Actor(BaseModel):
     profile_url: str = None
 
 
+class Provider(BaseModel):
+    provider_name: str
+    provider_logo_url: str
+
+
 class Movie(KeyboardMovie):
     # Data is getting from tmdb api
     imdb_id: str | None = None
@@ -54,6 +59,14 @@ class Movie(KeyboardMovie):
     metacritic_url: str | None = None
     imdb_url: str | None = None
     tmdb_url: str | None = None
+
+    # Providers data
+    providers_deep_link: str | None = None
+    providers: Dict[str, List[Provider]] | None = {
+        "buy": [],
+        "rent": [],
+        "flatrate": []
+    }
 
     def calculate_average_rating(self) -> None:
         if len(self.ratings) == 1:

@@ -12,7 +12,8 @@ from aiogram_dialog.widgets.kbd import Button
 from misc.states import MovieDialogSG
 
 from utils.caching_handlers import get_data, set_data, is_exist
-from utils.tmdb_api import get_movies_by_title, get_movie_details_tmdb, get_suggestions_by_id
+from utils.tmdb_api import (get_movies_by_title, get_movie_details_tmdb, get_suggestions_by_id)
+
 from utils.omdb_api import get_movie_details_omdb
 
 from models.movie import KeyboardMovie, Movie
@@ -114,6 +115,7 @@ async def get_movie_overview_data(dialog_manager: DialogManager, *args, **kwargs
         await get_movie_details_tmdb(movie)
         if movie.imdb_id:
             await get_movie_details_omdb(movie)
+        logging.info("Movie details: " + movie.json_data)
         await set_data(redis_key, movie.json_data)
 
     dialog_manager.dialog_data["current_movie_pretty_title"] = movie.pretty_title

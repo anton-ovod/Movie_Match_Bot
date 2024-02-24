@@ -7,7 +7,7 @@ from typing import List
 from config_reader import config
 from datetime import datetime
 
-from models.movie import KeyboardMovie, Movie, Actor, Rating
+from models.movie import KeyboardMovie, Movie, Actor, Rating, Provider
 
 
 async def get_movies_by_title(title: str) -> list[KeyboardMovie]:
@@ -48,17 +48,19 @@ async def get_movie_details_tmdb(movie: Movie) -> None:
             params = {
                 "api_key": config.api_key.get_secret_value(),
                 "language": "en-US",
-                "append_to_response": "credits,videos",
+                "append_to_response": "credits,videos,watch/providers",
             }
             async with session.get(movie_details_url, params=params) as response:
-                movie_detail = await response.json()
+                movie_detail = await response.json()  # raw data from tmdb api
+
+                # getting basic movie details
                 if title := movie_detail.get("title"):
                     movie.title = title
                 if release_date := movie_detail.get("release_date"):
                     movie.release_date = datetime.strptime(release_date, "%Y-%m-%d").date()
-                else:
-                    movie.release_date = None
+
                 movie.pretty_title = f"{movie.title} ({movie.release_date.year})" if movie.release_date else movie.title
+
                 if imdb_id := movie_detail.get("imdb_id"):
                     movie.imdb_id = imdb_id
                 if tagline := movie_detail.get("tagline"):
@@ -67,6 +69,16 @@ async def get_movie_details_tmdb(movie: Movie) -> None:
                     movie.overview = overview
                 if poster_path := movie_detail.get("poster_path"):
                     movie.poster_url = f'{config.base_image_url.get_secret_value()}{poster_path}'
+                if genres := movie_detail.get("genres"):
+                    movie.genres = [genre.get("name") for genre in genres]
+                if runtime := movie_detail.get("runtime"):
+                    movie.runtime = runtime
+                if homepage := movie_detail.get("homepage"):
+                    movie.homepage = homepage
+                if tmdb_rating := movie_detail.get("vote_average"):
+                    movie.ratings.append(Rating(source="TMDb", value=int(tmdb_rating) * 10))
+
+                # getting key for YouTube trailer and creating a link
                 if videos := movie_detail.get("videos").get("results"):
                     for video in videos:
                         if video.get("type") == "Trailer":
@@ -78,16 +90,15 @@ async def get_movie_details_tmdb(movie: Movie) -> None:
                 else:
                     movie.trailer_url = (f'{config.youtube_search_url.get_secret_value()}trailer+'
                                          f'{movie.title.replace(" ", "+")}')
-                if genres := movie_detail.get("genres"):
-                    movie.genres = [genre.get("name") for genre in genres]
-                if runtime := movie_detail.get("runtime"):
-                    movie.runtime = runtime
+
+                # getting cast details and creating links for actors
                 if actors := movie_detail.get("credits").get("cast"):
                     for actor in actors[:3]:
                         movie.cast.append(Actor(name=actor.get("name"),
                                                 character=actor.get("character"),
                                                 profile_url=f'{config.person_base_url.get_secret_value()}'
                                                             f'{actor.get("id")}'))
+                # getting crew details and creating links for actors
                 if crew := movie_detail.get("credits").get("crew"):
                     for crew_member in crew:
                         if crew_member.get("job") == "Director":
@@ -96,11 +107,29 @@ async def get_movie_details_tmdb(movie: Movie) -> None:
                                                     profile_url=f'{config.person_base_url.get_secret_value()}'
                                                                 f'{crew_member.get("id")}'))
                             break
-                if homepage := movie_detail.get("homepage"):
-                    movie.homepage = homepage
-                if tmdb_rating := movie_detail.get("vote_average"):
-                    movie.ratings.append(Rating(source="TMDb", value=int(tmdb_rating) * 10))
 
+                # getting providers details and deep link for movie
+                if providers := movie_detail.get("watch/providers").get("results"):
+                    if us := providers.get("US"):
+                        movie.providers_deep_link = us.get("link")
+                        if flatrate := us.get("flatrate"):
+                            for provider in flatrate:
+                                movie.providers["flatrate"].append(
+                                    Provider(provider_name=provider.get("provider_name"),
+                                             provider_logo_url=f'{config.base_image_url.get_secret_value()}'
+                                                               f'{provider.get("logo_path")}'))
+                        if rent := us.get("rent"):
+                            for provider in rent:
+                                movie.providers["rent"].append(
+                                    Provider(provider_name=provider.get("provider_name"),
+                                             provider_logo_url=f'{config.base_image_url.get_secret_value()}'
+                                                               f'{provider.get("logo_path")}'))
+                        if buy := us.get("buy"):
+                            for provider in buy:
+                                movie.providers["buy"].append(
+                                    Provider(provider_name=provider.get("provider_name"),
+                                             provider_logo_url=f'{config.base_image_url.get_secret_value()}'
+                                                               f'{provider.get("logo_path")}'))
     except Exception as e:
         logging.error(f"Error while getting movie details(TMDB): {e}")
 

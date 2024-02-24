@@ -15,8 +15,10 @@ home_router = Router()
 @home_router.message(Command("start"))
 async def start_command_handler(message: Message, dialog_manager: DialogManager):
     logging.info("Start command received")
+    user_language_code: str = message.from_user.language_code
     await dialog_manager.start(HomeDialogSG.home, mode=StartMode.RESET_STACK,
                                show_mode=ShowMode.SEND)
+    dialog_manager.dialog_data["user_language_code"] = user_language_code
 
 
 @home_router.message(Command("help"))
