@@ -18,6 +18,7 @@ title_request_message = env.get_template("movie_search_message.jinja2")
 results_message = env.get_template("results_message.jinja2")
 movie_overview_message = env.get_template("movie_overview_message.jinja2")
 movie_suggestions_message = env.get_template("movie_suggestions_message.jinja2")
+movie_availability_message = env.get_template("movie_availability_message.jinja2")
 
 keyboard_movies_group = Group(
     Column(
@@ -116,8 +117,9 @@ movie_overview_group = Group(
     Button(Const("🗂 Suggestions"), id="suggestions",
            on_click=movie_suggestions_handler),
 
-    Button(Const("📽 Availability"), id="availability",
-           on_click=lambda callback, self, manager: callback.answer("📽 Availability")),
+    SwitchTo(Const("📽 Availability"), id="availability",
+             on_click=lambda callback, self, manager: callback.answer("📽 Availability"),
+             state=MovieDialogSG.movie_availability),
 
     Back(Const("⬅️  Back"),
          on_click=lambda callback, self, manager: callback.answer("🔍 Search"),
@@ -173,5 +175,17 @@ movie_dialog = Dialog(
         getter=get_list_of_movie_suggestions,
         state=MovieDialogSG.movie_suggestions,
         parse_mode="HTML",
-    )
+        disable_web_page_preview=True
+    ),
+    Window(
+        Jinja(movie_availability_message),
+        SwitchTo(Const("⬅️  Back"), id="overview",
+                 on_click=lambda callback, self, manager: callback.answer("🎬 Overview"),
+                 state=MovieDialogSG.movie_overview),
+        MessageInput(message_handler),
+        getter=get_movie_overview_data,
+        state=MovieDialogSG.movie_availability,
+        parse_mode="HTML",
+        disable_web_page_preview=True
+    ),
 )

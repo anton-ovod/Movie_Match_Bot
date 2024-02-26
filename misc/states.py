@@ -22,6 +22,7 @@ class MovieDialogSG(StatesGroup):
     movies_pagination = State()
     movie_overview = State()
     movie_suggestions = State()
+    movie_availability = State()
 
 
 class PersonDialogSG(StatesGroup):

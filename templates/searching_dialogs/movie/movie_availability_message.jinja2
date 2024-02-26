@@ -1,0 +1,41 @@
+<b>📽 Streaming Availability:</b>
+
+{% if providers.rent or providers.buy or providers.flatrate  %}
+<i>Exciting news! <b>{{ pretty_title }}</b> is now available for streaming on multiple platforms. Here's where you can find it:</i>
+
+<b>📃 Rent:</b>
+
+{% if providers.rent %}
+{% for provider in providers.rent %}
+• {{ provider.provider_name }}
+{% endfor %}
+{% else %}
+<i>Not available for rent.</i>
+{% endif %}
+
+<b>🎫 Flat-rate:</b>
+
+{% if providers.flatrate %}
+{% for provider in providers.flatrate %}
+• {{ provider.provider_name }}
+{% endfor %}
+{% else %}
+<i>Not available for flat-rate streaming.</i>
+{% endif %}
+
+<b>💵 Buy:</b>
+
+{% if providers.buy %}
+{% for provider in providers.buy %}
+• {{ provider.provider_name }}
+{% endfor %}
+{% else %}
+<i>Not available for purchase.</i>
+{% endif %}
+
+<i>Direct links for each provider can be found <a href="{{ providers_deep_link }}">here</a> 🍿</i>
+{% else %}
+<i>We couldn't find <b>{{ pretty_title}}</b> available for streaming right now. 😔</i>
+
+Check back later, or explore other films. 🎬🍿
+{% endif %}
