@@ -11,9 +11,11 @@ from aiogram_dialog import setup_dialogs
 
 from handlers.home_dialog import home_router
 from handlers.searching.movie_dialog import movie_search_router
+from handlers.searching.tvshow_dialog import tvshow_search_router
 
 from dialogs.home_dialog import home_dialog
 from dialogs.searching.movie_dialog import movie_dialog
+from dialogs.searching.tvshow_dialog import tvshow_dialog
 
 from config_reader import config
 
@@ -31,8 +33,9 @@ async def main():
 
     home_router.include_router(home_dialog)
     movie_search_router.include_router(movie_dialog)
+    tvshow_search_router.include_router(tvshow_dialog)
 
-    dp.include_routers(home_router, movie_search_router)
+    dp.include_routers(home_router, movie_search_router, tvshow_search_router)
     setup_dialogs(dp)
     await dp.start_polling(bot, skip_updates=True)
 

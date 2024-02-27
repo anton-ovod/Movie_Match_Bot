@@ -14,11 +14,11 @@ from handlers.searching.movie_dialog import (title_request_handler, unknown_mess
                                              go_to_previous_movie_suggestions)
 from misc.states import MovieDialogSG
 
-title_request_message = env.get_template("movie_search_message.jinja2")
-results_message = env.get_template("results_message.jinja2")
-movie_overview_message = env.get_template("movie_overview_message.jinja2")
-movie_suggestions_message = env.get_template("movie_suggestions_message.jinja2")
-movie_availability_message = env.get_template("movie_availability_message.jinja2")
+title_request_message = env.get_template("movie/movie_search_message.jinja2")
+results_message = env.get_template("movie/results_message.jinja2")
+movie_overview_message = env.get_template("movie/movie_overview_message.jinja2")
+movie_suggestions_message = env.get_template("movie/movie_suggestions_message.jinja2")
+movie_availability_message = env.get_template("movie/movie_availability_message.jinja2")
 
 keyboard_movies_group = Group(
     Column(

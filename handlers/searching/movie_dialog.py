@@ -22,8 +22,8 @@ from dialogs.searching import env
 
 movie_search_router = Router()
 
-unknown_type_message = env.get_template("unknown_type_message.jinja2").render()
-no_results_message = env.get_template("no_results_message.jinja2").render()
+unknown_type_message = env.get_template("common/unknown_type_message.jinja2").render()
+no_results_message = env.get_template("movie/no_results_message.jinja2").render()
 keys_emojis = {
     1: "1️⃣",
     2: "2️⃣",
@@ -51,7 +51,7 @@ async def title_request_handler(message: Message, message_input: MessageInput,
 
     else:
         dialog_manager.dialog_data["user_request"] = message.text
-        logging.info(f"User request: `{message.text}` successfully saved")
+        logging.info(f"[Movie Search] User request: `{message.text}` successfully saved")
 
         dialog_manager.dialog_data["current_keyboard_movies_page"] = 1
         if "suggestions_depth_stack" not in dialog_manager.dialog_data:

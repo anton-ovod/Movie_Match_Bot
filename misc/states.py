@@ -32,6 +32,7 @@ class PersonDialogSG(StatesGroup):
 
 
 class ShowDialogSG(StatesGroup):
-    """States for the show dialog"""
+    """States for the tvshow dialog"""
 
     title_request = State()
+    shows_pagination = State()

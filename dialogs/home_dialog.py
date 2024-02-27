@@ -8,6 +8,7 @@ from dialogs import env
 from misc.states import HomeDialogSG, MovieDialogSG, ShowDialogSG, PersonDialogSG
 
 from handlers.searching.movie_dialog import init_movie_search_dialog
+from handlers.searching.tvshow_dialog import init_tvshow_search_dialog
 from handlers.home_dialog import message_handler
 
 home_message = env.get_template("home_message.jinja2").render()
@@ -37,7 +38,7 @@ search_options_group = Group(
         SwitchTo(Const("🎬  Movie"), id="movie", state=MovieDialogSG.title_request,
                  on_click=init_movie_search_dialog),
         SwitchTo(Const("📺  Show"), id="show", state=ShowDialogSG.title_request,
-                 on_click=lambda callback, self, manager: callback.answer("📺 Show")),
+                 on_click=init_tvshow_search_dialog),
         SwitchTo(Const("👤  Person"), id="person", state=PersonDialogSG.name_request,
                  on_click=lambda callback, self, manager: callback.answer("👤 Person"))
     ),
