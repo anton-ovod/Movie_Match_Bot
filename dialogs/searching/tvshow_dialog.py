@@ -3,8 +3,8 @@ from aiogram.filters.state import State, StatesGroup
 
 from aiogram_dialog import Window
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Group, SwitchTo, Row, Cancel
-from aiogram_dialog.widgets.text import Const, Jinja
+from aiogram_dialog.widgets.kbd import Group, SwitchTo, Row, Cancel, Back
+from aiogram_dialog.widgets.text import Const, Jinja, Format
 
 from aiogram_dialog import Dialog
 
@@ -16,10 +16,6 @@ from misc.states import ShowDialogSG
 
 tvshow_title_request_message = env.get_template("tvshow/tvshow_search_message.jinja2").render()
 
-
-
-
-
 tvshow_dialog = Dialog(
     Window(
         Jinja(tvshow_title_request_message),
@@ -30,7 +26,12 @@ tvshow_dialog = Dialog(
         state=ShowDialogSG.title_request,
         parse_mode="HTML",
         disable_web_page_preview=True,
+    ),
+    Window(
+        Format("User request: `{dialog_data[user_request]}` successfully saved"),
+        Back(Const("⬅️  Back")),
+        state=ShowDialogSG.shows_pagination,
+        parse_mode="HTML",
+        disable_web_page_preview=True
     )
 )
-
-

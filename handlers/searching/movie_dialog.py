@@ -10,9 +10,10 @@ from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
 
 from misc.states import MovieDialogSG
+from misc.enums import TypeOfSubject
 
 from utils.caching_handlers import get_data, set_data, is_exist
-from utils.tmdb_api import (get_movies_by_title, get_movie_details_tmdb, get_suggestions_by_id)
+from utils.tmdb_api import (tmdb_search_by_title, get_subject_details_tmdb, get_suggestions_by_id)
 
 from utils.omdb_api import get_movie_details_omdb
 
@@ -23,7 +24,7 @@ from dialogs.searching import env
 movie_search_router = Router()
 
 unknown_type_message = env.get_template("common/unknown_type_message.jinja2").render()
-no_results_message = env.get_template("movie/no_results_message.jinja2").render()
+no_results_message = env.get_template("common/no_results_message.jinja2").render()
 keys_emojis = {
     1: "1️⃣",
     2: "2️⃣",
@@ -112,7 +113,7 @@ async def get_movie_overview_data(dialog_manager: DialogManager, *args, **kwargs
     else:
         logging.info(f"Making a API request to TMDB API by movie id: {movie_tmdb_id}")
         movie = Movie(tmdb_id=movie_tmdb_id)
-        await get_movie_details_tmdb(movie)
+        await get_subject_details_tmdb(movie, TypeOfSubject.movie)
         if movie.imdb_id:
             await get_movie_details_omdb(movie)
         logging.info("Movie details: " + movie.json_data)
@@ -136,7 +137,7 @@ async def get_list_of_keyboard_movies(dialog_manager: DialogManager, *args, **kw
                            for item in cache]
     else:
         logging.info(f"Making a API request to TMDB API by title: {user_request}")
-        keyboard_movies = await get_movies_by_title(user_request)
+        keyboard_movies = await tmdb_search_by_title(user_request, TypeOfSubject.movie)
         cache = [movie.json_data for movie in keyboard_movies]
         await set_data(redis_key, cache)
 
@@ -201,7 +202,7 @@ async def get_list_of_movie_suggestions(dialog_manager: DialogManager, *args, **
         suggestions = [KeyboardMovie(**(json.loads(item))) for item in cache]
     else:
         logging.info(f"Making a API request to TMDB API by movie id: {current_movie_tmdb_id}")
-        suggestions = await get_suggestions_by_id(current_movie_tmdb_id)
+        suggestions = await get_suggestions_by_id(current_movie_tmdb_id, TypeOfSubject.movie)
         cache = [movie.json_data for movie in suggestions]
         await set_data(redis_key, cache)
 

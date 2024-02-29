@@ -6,12 +6,11 @@ class Settings(BaseSettings):
     bot_token: SecretStr
     api_key: SecretStr
     base_image_url: SecretStr
-    search_movie_url: SecretStr
-    movie_details_url: SecretStr
+    tmdb_search_url: SecretStr
+    tmdb_subject_details_url: SecretStr
     base_video_url: SecretStr
     omdb_api_key: SecretStr
     omdb_base_url: SecretStr
-    search_imdb_url: SecretStr
     title_imdb_url: SecretStr
     title_tmdb_url: SecretStr
     search_rot_url: SecretStr
