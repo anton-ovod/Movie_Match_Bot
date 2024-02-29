@@ -17,14 +17,14 @@ from utils.tmdb_api import (tmdb_search_by_title, get_subject_details_tmdb, get_
 
 from utils.omdb_api import get_movie_details_omdb
 
-from models.movie import KeyboardMovie, Movie
+from models.base import BaseSubject
+from models.movie import Movie
 
 from dialogs.searching import env
 
 movie_search_router = Router()
 
 unknown_type_message = env.get_template("common/unknown_type_message.jinja2").render()
-no_results_message = env.get_template("common/no_results_message.jinja2").render()
 keys_emojis = {
     1: "1️⃣",
     2: "2️⃣",
@@ -124,7 +124,7 @@ async def get_movie_overview_data(dialog_manager: DialogManager, *args, **kwargs
     return dump_data
 
 
-async def get_list_of_keyboard_movies(dialog_manager: DialogManager, *args, **kwargs) -> dict:
+async def get_list_of_base_subjects(dialog_manager: DialogManager, *args, **kwargs) -> dict:
     user_request = dialog_manager.dialog_data["user_request"]
     dialog_manager.dialog_data["current_movie_tmdb_id"] = None
 
@@ -133,7 +133,7 @@ async def get_list_of_keyboard_movies(dialog_manager: DialogManager, *args, **kw
     if await is_exist(redis_key):
         logging.info(f"Retrieving data from Redis by key: {redis_key}")
         cache = await get_data(redis_key)
-        keyboard_movies = [KeyboardMovie(**(json.loads(item)))
+        keyboard_movies = [BaseSubject(**(json.loads(item)))
                            for item in cache]
     else:
         logging.info(f"Making a API request to TMDB API by title: {user_request}")
@@ -199,7 +199,7 @@ async def get_list_of_movie_suggestions(dialog_manager: DialogManager, *args, **
     if await is_exist(redis_key):
         logging.info(f"Retrieving data from Redis by key: {redis_key}")
         cache = await get_data(redis_key)
-        suggestions = [KeyboardMovie(**(json.loads(item))) for item in cache]
+        suggestions = [BaseSubject(**(json.loads(item))) for item in cache]
     else:
         logging.info(f"Making a API request to TMDB API by movie id: {current_movie_tmdb_id}")
         suggestions = await get_suggestions_by_id(current_movie_tmdb_id, TypeOfSubject.movie)

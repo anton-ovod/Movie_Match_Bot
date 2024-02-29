@@ -8,7 +8,7 @@ from aiogram_dialog.widgets.text import Const, Format, Jinja
 
 from dialogs.searching import env
 from handlers.searching.movie_dialog import (title_request_handler, unknown_message_handler, message_handler,
-                                             get_list_of_keyboard_movies, movie_overview_handler, next_page_handler,
+                                             get_list_of_base_subjects, movie_overview_handler, next_page_handler,
                                              previous_page_handler, get_movie_overview_data, movie_suggestions_handler,
                                              get_list_of_movie_suggestions, go_to_previous_movie,
                                              go_to_previous_movie_suggestions)
@@ -19,6 +19,7 @@ results_message = env.get_template("common/results_message.jinja2")
 movie_overview_message = env.get_template("movie/movie_overview_message.jinja2")
 movie_suggestions_message = env.get_template("movie/movie_suggestions_message.jinja2")
 movie_availability_message = env.get_template("movie/movie_availability_message.jinja2")
+no_results_message = env.get_template("common/no_results_message.jinja2").render()
 
 keyboard_movies_group = Group(
     Column(
@@ -150,11 +151,14 @@ movie_dialog = Dialog(
         disable_web_page_preview=True
     ),
     Window(
-        Jinja(results_message),
+        Jinja(results_message,
+              when=lambda dialog_manager, _: dialog_manager.dialog_data["keyboard_movies"]),
+        Jinja(no_results_message,
+              when=lambda dialog_manager, _: not dialog_manager.dialog_data["keyboard_movies"]),
         keyboard_movies_group,
         keyboard_movies_navigation_group,
         MessageInput(message_handler),
-        getter=get_list_of_keyboard_movies,
+        getter=get_list_of_base_subjects,
         state=MovieDialogSG.movies_pagination,
         parse_mode="HTML",
         disable_web_page_preview=True

@@ -7,14 +7,15 @@ from typing import List, Dict
 from config_reader import config
 from datetime import datetime
 
-from models.movie import KeyboardMovie, Movie, Actor, Rating, Provider
+from models.base import BaseSubject
+from models.movie import Movie, Actor, Rating, Provider
 from models.tvshow import TVShow
 from models.person import Person
 
 from misc.enums import TypeOfSubject
 
 
-def create_list_of_keyboard_movies(data: List[Dict]) -> List[KeyboardMovie]:
+def create_list_of_keyboard_movies(data: List[Dict]) -> List[BaseSubject]:
     results = []
     for item in data:
         title = item.get("title")
@@ -25,15 +26,15 @@ def create_list_of_keyboard_movies(data: List[Dict]) -> List[KeyboardMovie]:
         except ValueError:
             release_date = None
         pretty_title = f"{title} ({release_date.year})" if release_date else title
-        results.append(KeyboardMovie(title=title,
-                                     pretty_title=pretty_title,
-                                     release_date=release_date,
-                                     tmdb_id=tmdb_id))
+        results.append(BaseSubject(title=title,
+                                   pretty_title=pretty_title,
+                                   release_date=release_date,
+                                   tmdb_id=tmdb_id))
     return results
 
 
 # Functions to get data from TMDb API for movies
-async def tmdb_search_by_title(title: str, type_of_subject: TypeOfSubject) -> list[KeyboardMovie]:
+async def tmdb_search_by_title(title: str, type_of_subject: TypeOfSubject) -> List[BaseSubject]:
     try:
         async with aiohttp.ClientSession() as session:
             search_subject_url = config.tmdb_search_url.get_secret_value() + type_of_subject.value
@@ -67,7 +68,7 @@ async def get_subject_details_tmdb(subject: Movie | TVShow | Person, type_of_sub
             async with session.get(subject_details_url, params=params) as response:
                 movie_detail = await response.json()  # raw data from tmdb api
 
-                # getting basic movie details
+                # getting basic subject details
                 if title := movie_detail.get("title"):
                     subject.title = title
                 if release_date := movie_detail.get("release_date"):
@@ -113,7 +114,7 @@ async def get_subject_details_tmdb(subject: Movie | TVShow | Person, type_of_sub
                                                   character=actor.get("character"),
                                                   profile_url=f'{config.person_base_url.get_secret_value()}'
                                                               f'{actor.get("id")}'))
-                # getting crew details and creating links for actors
+                # getting crew details and creating links for director
                 if crew := movie_detail.get("credits").get("crew"):
                     for crew_member in crew:
                         if crew_member.get("job") == "Director":
@@ -123,7 +124,7 @@ async def get_subject_details_tmdb(subject: Movie | TVShow | Person, type_of_sub
                                                                   f'{crew_member.get("id")}'))
                             break
 
-                # getting providers details and deep link for movie
+                # getting providers details and deep link
                 if providers := movie_detail.get("watch/providers").get("results"):
                     if us := providers.get("US"):
                         subject.providers_deep_link = us.get("link")
@@ -149,7 +150,7 @@ async def get_subject_details_tmdb(subject: Movie | TVShow | Person, type_of_sub
         logging.error(f"Error while getting movie details(TMDB): {e}")
 
 
-async def get_suggestions_by_id(tmdb_id: int, type_of_subject: TypeOfSubject) -> List[KeyboardMovie]:
+async def get_suggestions_by_id(tmdb_id: int, type_of_subject: TypeOfSubject) -> List[BaseSubject]:
     try:
         async with aiohttp.ClientSession() as session:
             subject_recommendations_url = (f"{config.tmdb_subject_details_url.get_secret_value()}/"
