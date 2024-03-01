@@ -21,22 +21,10 @@ from utils.omdb_api import get_movie_details_omdb
 from models.base import BaseSubject
 from models.movie import Movie
 
-
 movie_search_router = Router()
 
-
-keys_emojis = {
-    1: "\u0031\uFE0F\u20E3",
-    2: "\u0032\uFE0F\u20E3",
-    3: "\u0033\uFE0F\u20E3",
-    4: "\u0034\uFE0F\u20E3",
-    5: "\u0035\uFE0F\u20E3",
-    6: "\u0036\uFE0F\u20E3",
-    7: "\u0037\uFE0F\u20E3",
-    8: "\u0038\uFE0F\u20E3",
-    9: "\u0039\uFE0F\u20E3",
-    10: "\U0001F51F"
-}
+ITEMS_PER_PAGE = 7
+navigation_emoji = r"\u003{number_of_page:}\uFE0F\u20E3"  # DO NOT MAKE MORE THAN 9 PAGES
 
 
 async def init_movie_search_dialog(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
@@ -68,7 +56,7 @@ async def get_list_of_found_movies(dialog_manager: DialogManager, *args, **kwarg
     redis_key = f"keybmovies:{user_request.lower().replace(' ', '')}"
 
     if await is_exist(redis_key):
-        logging.info(f"[test] Retrieving data from Redis by key: {redis_key}")
+        logging.info(f"Retrieving data from Redis by key: {redis_key}")
         cache = await get_data(redis_key)
         keyboard_movies = [BaseSubject(**(json.loads(item)))
                            for item in cache]
@@ -78,12 +66,11 @@ async def get_list_of_found_movies(dialog_manager: DialogManager, *args, **kwarg
         cache = [movie.json_data for movie in keyboard_movies]
         await set_data(redis_key, cache)
 
-    items_per_page = 5
-    number_of_pages = math.ceil(len(keyboard_movies) / items_per_page)
+    number_of_pages = math.ceil(len(keyboard_movies) / ITEMS_PER_PAGE)
     dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] = number_of_pages
 
-    keyboard_movies = keyboard_movies[(dialog_manager.dialog_data["current_keyboard_movies_page"] - 1) * items_per_page:
-                                      dialog_manager.dialog_data["current_keyboard_movies_page"] * items_per_page]
+    keyboard_movies = keyboard_movies[(dialog_manager.dialog_data["current_keyboard_movies_page"] - 1) * ITEMS_PER_PAGE:
+                                      dialog_manager.dialog_data["current_keyboard_movies_page"] * ITEMS_PER_PAGE]
 
     next_page_number = dialog_manager.dialog_data["current_keyboard_movies_page"] + 1 if \
         dialog_manager.dialog_data["current_keyboard_movies_page"] + 1 <= number_of_pages \
@@ -95,8 +82,8 @@ async def get_list_of_found_movies(dialog_manager: DialogManager, *args, **kwarg
 
     return {
         "keyboard_movies": keyboard_movies,
-        "next_page": keys_emojis[next_page_number],
-        "prev_page": keys_emojis[prev_page_number],
+        "next_page": navigation_emoji.format(number_of_page=next_page_number).encode('utf-8').decode('unicode-escape'),
+        "prev_page": navigation_emoji.format(number_of_page=prev_page_number).encode('utf-8').decode('unicode-escape'),
     }
 
 
@@ -104,7 +91,8 @@ async def previous_page_handler(callback: CallbackQuery, message_input: MessageI
     logging.info("Previous page handler")
     if manager.dialog_data["current_keyboard_movies_page"] > 1:
         manager.dialog_data["current_keyboard_movies_page"] -= 1
-    await callback.answer("Page " + keys_emojis[manager.dialog_data["current_keyboard_movies_page"]])
+    await callback.answer("Page " + navigation_emoji.format(
+        number_of_page=manager.dialog_data["current_keyboard_movies_page"]).encode('utf-8').decode('unicode-escape'))
 
 
 async def next_page_handler(callback: CallbackQuery, message_input: MessageInput, manager: DialogManager):
@@ -112,7 +100,8 @@ async def next_page_handler(callback: CallbackQuery, message_input: MessageInput
     if (manager.dialog_data["current_keyboard_movies_page"] <
             manager.dialog_data["total_number_of_keyboard_movies_pages"]):
         manager.dialog_data["current_keyboard_movies_page"] += 1
-    await callback.answer("Page " + keys_emojis[manager.dialog_data["current_keyboard_movies_page"]])
+    await callback.answer("Page " + navigation_emoji.format(
+        number_of_page=manager.dialog_data["current_keyboard_movies_page"]).encode('utf-8').decode('unicode-escape'))
 
 
 async def movie_overview_handler(callback: CallbackQuery, button: Button, dialog_manager: DialogManager,
@@ -224,6 +213,3 @@ async def go_to_previous_movie_suggestions(callback: CallbackQuery, button: Butt
 
     await dialog_manager.switch_to(MovieDialogSG.movie_suggestions, show_mode=ShowMode.EDIT)
     await callback.answer("🎬 Movie suggestions")
-
-
-
