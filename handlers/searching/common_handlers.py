@@ -2,12 +2,19 @@ import json
 import logging
 import math
 
-from aiogram_dialog import DialogManager
+from aiogram.types import Message
+from aiogram_dialog import DialogManager, ShowMode
+from aiogram_dialog.widgets.input import MessageInput
 
 from misc.enums import TypeOfSubject
 from models.base import BaseSubject
 from utils.caching_handlers import is_exist, get_data, set_data
 from utils.tmdb_api import tmdb_search_by_title
+
+from dialogs.searching import env
+
+unknown_type_message = env.get_template("common/unknown_type_message.jinja2").render()
+
 
 async def message_handler(message: Message, message_input: MessageInput, dialog_manager: DialogManager):
     logging.info(f"Message from '{message.from_user.username}' received: '{message.text}'")
@@ -17,6 +24,7 @@ async def message_handler(message: Message, message_input: MessageInput, dialog_
 
 async def unknown_message_handler(message: Message, *args):
     await message.answer(text=unknown_type_message, parse_mode="HTML")
+
 
 async def get_list_of_found_movies(dialog_manager: DialogManager, *args, **kwargs) -> dict:
     user_request = dialog_manager.dialog_data["user_request"]

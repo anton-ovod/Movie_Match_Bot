@@ -7,8 +7,9 @@ from aiogram_dialog.widgets.kbd import Back, Cancel, Group, Select, Row, Column,
 from aiogram_dialog.widgets.text import Const, Format, Jinja
 
 from dialogs.searching import env
-from handlers.searching.movie_dialog import (title_request_handler, unknown_message_handler, message_handler,
-                                             get_list_of_base_subjects, movie_overview_handler, next_page_handler,
+from handlers.searching.common_handlers import unknown_message_handler, message_handler
+from handlers.searching.movie_dialog import (title_request_handler,
+                                             get_list_of_found_movies, movie_overview_handler, next_page_handler,
                                              previous_page_handler, get_movie_overview_data, movie_suggestions_handler,
                                              get_list_of_movie_suggestions, go_to_previous_movie,
                                              go_to_previous_movie_suggestions)
@@ -152,13 +153,13 @@ movie_dialog = Dialog(
     ),
     Window(
         Jinja(results_message,
-              when=lambda dialog_manager, _: dialog_manager.dialog_data["keyboard_movies"]),
+              when=lambda movie_data, _, __: movie_data.get("keyboard_movies")),
         Jinja(no_results_message,
-              when=lambda dialog_manager, _: not dialog_manager.dialog_data["keyboard_movies"]),
+              when=lambda movie_data, _, __: not movie_data.get("keyboard_movies")),
         keyboard_movies_group,
         keyboard_movies_navigation_group,
         MessageInput(message_handler),
-        getter=get_list_of_base_subjects,
+        getter=get_list_of_found_movies,
         state=MovieDialogSG.movies_pagination,
         parse_mode="HTML",
         disable_web_page_preview=True
