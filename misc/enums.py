@@ -5,3 +5,9 @@ class TypeOfSubject(Enum):
     movie = "movie"
     tv_show = "tv"
     person = "person"
+
+
+class TypeOfSubjectFeature(Enum):
+    base_subjects = "base_subjects"
+    overview = "overview"
+    suggestions = "suggestions"

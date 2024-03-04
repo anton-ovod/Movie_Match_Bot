@@ -1,12 +1,13 @@
 import json
 import logging
 import math
+from typing import List
 
 from aiogram.types import Message
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.widgets.input import MessageInput
 
-from misc.enums import TypeOfSubject
+from misc.enums import TypeOfSubject, TypeOfSubjectFeature
 from models.base import BaseSubject
 from utils.caching_handlers import is_exist, get_data, set_data
 from utils.tmdb_api import tmdb_search_by_title
@@ -26,39 +27,36 @@ async def unknown_message_handler(message: Message, *args):
     await message.answer(text=unknown_type_message, parse_mode="HTML")
 
 
-async def get_list_of_found_movies(dialog_manager: DialogManager, *args, **kwargs) -> dict:
-    user_request = dialog_manager.dialog_data["user_request"]
-    dialog_manager.dialog_data["current_movie_tmdb_id"] = None
-
-    redis_key = f"keybmovies:{user_request.lower().replace(' ', '')}"
+async def get_list_of_found_base_subjects_by_title(user_request: str,
+                                                   type_of_subject: TypeOfSubject,
+                                                   *args, **kwargs) -> List[BaseSubject]:
+    redis_key = f"basesubjects:{type_of_subject.value}:{user_request.lower().replace(' ', '')}"
 
     if await is_exist(redis_key):
         logging.info(f"Retrieving data from Redis by key: {redis_key}")
         cache = await get_data(redis_key)
-        keyboard_movies = [BaseSubject(**(json.loads(item)))
-                           for item in cache]
+        base_subjects = [BaseSubject(**(json.loads(item)))
+                         for item in cache]
     else:
-        logging.info(f"Making a API request to TMDB API by title: {user_request}")
-        keyboard_movies = await tmdb_search_by_title(user_request, TypeOfSubject.movie)
-        cache = [movie.json_data for movie in keyboard_movies]
+        logging.info(f"Making a API request by title: {user_request}")
+        base_subjects = await tmdb_search_by_title(user_request, TypeOfSubject.movie)
+        cache = [item.json_data for item in base_subjects]
         await set_data(redis_key, cache)
 
-    number_of_pages = math.ceil(len(keyboard_movies) / 10)
-    dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] = number_of_pages
+    return base_subjects
 
-    keyboard_movies = keyboard_movies[(dialog_manager.dialog_data["current_keyboard_movies_page"] - 1) * 10:
-                                      dialog_manager.dialog_data["current_keyboard_movies_page"] * 10]
 
-    next_page_number = dialog_manager.dialog_data["current_keyboard_movies_page"] + 1 if \
-        dialog_manager.dialog_data["current_keyboard_movies_page"] + 1 <= number_of_pages \
+async def calculate_pagination(base_subjects: List[BaseSubject], dialog_manager: DialogManager,
+                               items_per_page: int, type_of_subject: TypeOfSubject) -> (int, int):
+    number_of_pages = math.ceil(len(base_subjects) / items_per_page)
+    dialog_manager.dialog_data[f"total_number_of_base_{type_of_subject.value}s_pages"] = number_of_pages
+
+    next_page_number = dialog_manager.dialog_data[f"current_base_{type_of_subject.value}s_page"] + 1 if \
+        dialog_manager.dialog_data[f"current_base_{type_of_subject.value}s_page"] + 1 <= number_of_pages \
         else number_of_pages
 
-    prev_page_number = dialog_manager.dialog_data["current_keyboard_movies_page"] - 1 if \
-        dialog_manager.dialog_data["current_keyboard_movies_page"] - 1 > 0 \
+    prev_page_number = dialog_manager.dialog_data[f"current_base_{type_of_subject.value}s_page"] - 1 if \
+        dialog_manager.dialog_data[f"current_base_{type_of_subject.value}s_page"] - 1 > 0 \
         else 1
 
-    return {
-        "keyboard_movies": keyboard_movies,
-        "next_page": keys_emojis[next_page_number],
-        "prev_page": keys_emojis[prev_page_number],
-    }
+    return next_page_number, prev_page_number

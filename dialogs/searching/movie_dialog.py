@@ -30,9 +30,9 @@ keyboard_movies_group = Group(
     Column(
         Select(
             Format("{item.pretty_title}"),
-            id="keyboard_movies",
+            id="base_movies",
             item_id_getter=operator.itemgetter("tmdb_id"),
-            items="keyboard_movies",
+            items="base_movies",
             on_click=movie_overview_handler,
         )
     )
@@ -53,7 +53,7 @@ keyboard_movies_navigation_group = Group(
                dialog_manager.dialog_data["suggestions_depth_stack"]
                ),
         when=lambda _, __, dialog_manager:
-        dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] == 1
+        dialog_manager.dialog_data["total_number_of_base_movies_pages"] == 1
     ),
 
     Row(
@@ -74,8 +74,8 @@ keyboard_movies_navigation_group = Group(
                id="next_page",
                on_click=next_page_handler),
         when=lambda _, __, dialog_manager:
-        dialog_manager.dialog_data["current_keyboard_movies_page"] == 1 and
-        dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] > 1
+        dialog_manager.dialog_data["current_base_movies_page"] == 1 and
+        dialog_manager.dialog_data["total_number_of_base_movies_pages"] > 1
     ),
 
     Row(
@@ -85,9 +85,9 @@ keyboard_movies_navigation_group = Group(
         Cancel(Const("🕵️ Search"), id="search",
                on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
         when=lambda _, __, dialog_manager:
-        dialog_manager.dialog_data["current_keyboard_movies_page"] ==
-        dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] and
-        dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] > 1
+        dialog_manager.dialog_data["current_base_movies_page"] ==
+        dialog_manager.dialog_data["total_number_of_base_movies_pages"] and
+        dialog_manager.dialog_data["total_number_of_base_movies_pages"] > 1
 
     ),
 
@@ -100,9 +100,9 @@ keyboard_movies_navigation_group = Group(
         Button(Format("{next_page}"),
                id="next_page",
                on_click=next_page_handler),
-        when=lambda _, __, dialog_manager: dialog_manager.dialog_data["current_keyboard_movies_page"] !=
-                                           dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] > 1 !=
-                                           dialog_manager.dialog_data["current_keyboard_movies_page"]
+        when=lambda _, __, dialog_manager: dialog_manager.dialog_data["current_base_movies_page"] !=
+                                           dialog_manager.dialog_data["total_number_of_base_movies_pages"] > 1 !=
+                                           dialog_manager.dialog_data["current_base_movies_page"]
 
     )
 
@@ -167,9 +167,9 @@ movie_dialog = Dialog(
     ),
     Window(
         Jinja(results_message,
-              when=lambda movie_data, _, __: movie_data.get("keyboard_movies")),
+              when=lambda movie_data, _, __: movie_data.get("base_movies")),
         Jinja(no_results_message,
-              when=lambda movie_data, _, __: not movie_data.get("keyboard_movies")),
+              when=lambda movie_data, _, __: not movie_data.get("base_movies")),
         keyboard_movies_group,
         keyboard_movies_navigation_group,
         MessageInput(message_handler),

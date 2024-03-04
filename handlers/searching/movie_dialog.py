@@ -9,12 +9,13 @@ from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
 
-from handlers.searching.common_handlers import unknown_message_handler
+from handlers.searching.common_handlers import (unknown_message_handler, get_list_of_found_base_subjects_by_title,
+calculate_pagination)
 from misc.states import MovieDialogSG
 from misc.enums import TypeOfSubject
 
 from utils.caching_handlers import get_data, set_data, is_exist
-from utils.tmdb_api import (tmdb_search_by_title, get_subject_details_tmdb, get_suggestions_by_id)
+from utils.tmdb_api import (tmdb_search_by_title, get_subject_details_tmdb, get_subject_suggestions_by_id)
 
 from utils.omdb_api import get_movie_details_omdb
 
@@ -41,7 +42,7 @@ async def title_request_handler(message: Message, message_input: MessageInput,
         dialog_manager.dialog_data["user_request"] = message.text
         logging.info(f"[Movie Search] User request: `{message.text}` successfully saved")
 
-        dialog_manager.dialog_data["current_keyboard_movies_page"] = 1
+        dialog_manager.dialog_data["current_base_movies_page"] = 1
         if "suggestions_depth_stack" not in dialog_manager.dialog_data:
             dialog_manager.dialog_data["suggestions_depth_stack"] = []
 
@@ -53,35 +54,16 @@ async def get_list_of_found_movies(dialog_manager: DialogManager, *args, **kwarg
     user_request = dialog_manager.dialog_data["user_request"]
     dialog_manager.dialog_data["current_movie_tmdb_id"] = None
 
-    redis_key = f"keybmovies:{user_request.lower().replace(' ', '')}"
 
-    if await is_exist(redis_key):
-        logging.info(f"Retrieving data from Redis by key: {redis_key}")
-        cache = await get_data(redis_key)
-        keyboard_movies = [BaseSubject(**(json.loads(item)))
-                           for item in cache]
-    else:
-        logging.info(f"Making a API request to TMDB API by title: {user_request}")
-        keyboard_movies = await tmdb_search_by_title(user_request, TypeOfSubject.movie)
-        cache = [movie.json_data for movie in keyboard_movies]
-        await set_data(redis_key, cache)
+    current_base_movies_page = dialog_manager.dialog_data["current_base_movies_page"]
+    base_movies = await get_list_of_found_base_subjects_by_title(user_request, TypeOfSubject.movie)
 
-    number_of_pages = math.ceil(len(keyboard_movies) / ITEMS_PER_PAGE)
-    dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] = number_of_pages
-
-    keyboard_movies = keyboard_movies[(dialog_manager.dialog_data["current_keyboard_movies_page"] - 1) * ITEMS_PER_PAGE:
-                                      dialog_manager.dialog_data["current_keyboard_movies_page"] * ITEMS_PER_PAGE]
-
-    next_page_number = dialog_manager.dialog_data["current_keyboard_movies_page"] + 1 if \
-        dialog_manager.dialog_data["current_keyboard_movies_page"] + 1 <= number_of_pages \
-        else number_of_pages
-
-    prev_page_number = dialog_manager.dialog_data["current_keyboard_movies_page"] - 1 if \
-        dialog_manager.dialog_data["current_keyboard_movies_page"] - 1 > 0 \
-        else 1
+    next_page_number, prev_page_number = await calculate_pagination(base_movies, dialog_manager, ITEMS_PER_PAGE,
+                                                                    TypeOfSubject.movie)
 
     return {
-        "keyboard_movies": keyboard_movies,
+        "base_movies": base_movies[(current_base_movies_page - 1) * ITEMS_PER_PAGE:
+                                   current_base_movies_page * ITEMS_PER_PAGE],
         "next_page": navigation_emoji.format(number_of_page=next_page_number).encode('utf-8').decode('unicode-escape'),
         "prev_page": navigation_emoji.format(number_of_page=prev_page_number).encode('utf-8').decode('unicode-escape'),
     }
@@ -89,19 +71,19 @@ async def get_list_of_found_movies(dialog_manager: DialogManager, *args, **kwarg
 
 async def previous_page_handler(callback: CallbackQuery, message_input: MessageInput, manager: DialogManager):
     logging.info("Previous page handler")
-    if manager.dialog_data["current_keyboard_movies_page"] > 1:
-        manager.dialog_data["current_keyboard_movies_page"] -= 1
+    if manager.dialog_data["current_base_movies_page"] > 1:
+        manager.dialog_data["current_base_movies_page"] -= 1
     await callback.answer("Page " + navigation_emoji.format(
-        number_of_page=manager.dialog_data["current_keyboard_movies_page"]).encode('utf-8').decode('unicode-escape'))
+        number_of_page=manager.dialog_data["current_base_movies_page"]).encode('utf-8').decode('unicode-escape'))
 
 
 async def next_page_handler(callback: CallbackQuery, message_input: MessageInput, manager: DialogManager):
     logging.info("Next page handler")
-    if (manager.dialog_data["current_keyboard_movies_page"] <
-            manager.dialog_data["total_number_of_keyboard_movies_pages"]):
-        manager.dialog_data["current_keyboard_movies_page"] += 1
+    if (manager.dialog_data["current_base_movies_page"] <
+            manager.dialog_data["total_number_of_base_movies_pages"]):
+        manager.dialog_data["current_base_movies_page"] += 1
     await callback.answer("Page " + navigation_emoji.format(
-        number_of_page=manager.dialog_data["current_keyboard_movies_page"]).encode('utf-8').decode('unicode-escape'))
+        number_of_page=manager.dialog_data["current_base_movies_page"]).encode('utf-8').decode('unicode-escape'))
 
 
 async def movie_overview_handler(callback: CallbackQuery, button: Button, dialog_manager: DialogManager,
@@ -170,7 +152,7 @@ async def get_list_of_movie_suggestions(dialog_manager: DialogManager, *args, **
         suggestions = [BaseSubject(**(json.loads(item))) for item in cache]
     else:
         logging.info(f"Making a API request to TMDB API by movie id: {current_movie_tmdb_id}")
-        suggestions = await get_suggestions_by_id(current_movie_tmdb_id, TypeOfSubject.movie)
+        suggestions = await get_subject_suggestions_by_id(current_movie_tmdb_id, TypeOfSubject.movie)
         cache = [movie.json_data for movie in suggestions]
         await set_data(redis_key, cache)
 

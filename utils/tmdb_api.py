@@ -150,7 +150,7 @@ async def get_subject_details_tmdb(subject: Movie | TVShow | Person, type_of_sub
         logging.error(f"Error while getting movie details(TMDB): {e}")
 
 
-async def get_suggestions_by_id(tmdb_id: int, type_of_subject: TypeOfSubject) -> List[BaseSubject]:
+async def get_subject_suggestions_by_id(tmdb_id: int, type_of_subject: TypeOfSubject) -> List[BaseSubject]:
     try:
         async with aiohttp.ClientSession() as session:
             subject_recommendations_url = (f"{config.tmdb_subject_details_url.get_secret_value()}/"
@@ -168,7 +168,7 @@ async def get_suggestions_by_id(tmdb_id: int, type_of_subject: TypeOfSubject) ->
 
                 return recommendations
     except Exception as e:
-        logging.error(f"[TMDB API] Error while getting recommendations by id: {e}")
+        logging.error(f"[TMDB API] Error while getting suggestions by id: {e}")
 
 # Functions to get different data from TMDb API for tv shows
 # async def get_tvshows_by_title(title: str) -> list[KeyboardMovie]:
