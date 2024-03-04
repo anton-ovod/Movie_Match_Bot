@@ -27,6 +27,20 @@ async def unknown_message_handler(message: Message, *args):
     await message.answer(text=unknown_type_message, parse_mode="HTML")
 
 
+async def subject_title_request_handler(message: Message,
+                                        dialog_manager: DialogManager,
+                                        type_of_subject: TypeOfSubject):
+    if not message.html_text.isascii():
+        await unknown_message_handler(message)
+    else:
+        dialog_manager.dialog_data["user_request"] = message.text
+        logging.info(f"[{type_of_subject.value} Search] User request: `{message.text}` successfully saved")
+
+        dialog_manager.dialog_data[f"current_base_{type_of_subject.value}s_page"] = 1
+        if "suggestions_depth_stack" not in dialog_manager.dialog_data:
+            dialog_manager.dialog_data["suggestions_depth_stack"] = []
+
+
 async def get_list_of_found_base_subjects_by_title(user_request: str,
                                                    type_of_subject: TypeOfSubject,
                                                    *args, **kwargs) -> List[BaseSubject]:

@@ -9,13 +9,13 @@ from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
 
-from handlers.searching.common_handlers import (unknown_message_handler, get_list_of_found_base_subjects_by_title,
-calculate_pagination)
+from handlers.searching.common_handlers import (get_list_of_found_base_subjects_by_title,
+                                                calculate_pagination, subject_title_request_handler)
 from misc.states import MovieDialogSG
 from misc.enums import TypeOfSubject
 
 from utils.caching_handlers import get_data, set_data, is_exist
-from utils.tmdb_api import (tmdb_search_by_title, get_subject_details_tmdb, get_subject_suggestions_by_id)
+from utils.tmdb_api import (get_subject_details_tmdb, get_subject_suggestions_by_id)
 
 from utils.omdb_api import get_movie_details_omdb
 
@@ -28,34 +28,26 @@ ITEMS_PER_PAGE = 7
 navigation_emoji = r"\u003{number_of_page:}\uFE0F\u20E3"  # DO NOT MAKE MORE THAN 9 PAGES
 
 
-async def init_movie_search_dialog(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+async def init_movie_search_dialog(callback: CallbackQuery, _, dialog_manager: DialogManager):
     logging.info("Movie search dialog initialized")
     await dialog_manager.start(MovieDialogSG.title_request, show_mode=ShowMode.EDIT)
     await callback.answer("🤖 I'm ready to search for movies!")
 
 
-async def title_request_handler(message: Message, message_input: MessageInput,
-                                dialog_manager: DialogManager):
-    if not message.html_text.isascii():
-        await unknown_message_handler(message)
-    else:
-        dialog_manager.dialog_data["user_request"] = message.text
-        logging.info(f"[Movie Search] User request: `{message.text}` successfully saved")
+async def title_request_handler(message: Message, _, dialog_manager: DialogManager):
+    await subject_title_request_handler(message, dialog_manager, TypeOfSubject.movie)
 
-        dialog_manager.dialog_data["current_base_movies_page"] = 1
-        if "suggestions_depth_stack" not in dialog_manager.dialog_data:
-            dialog_manager.dialog_data["suggestions_depth_stack"] = []
+    await message.delete()
 
-        await message.delete()
-        await dialog_manager.switch_to(MovieDialogSG.movies_pagination, show_mode=ShowMode.EDIT)
+    await dialog_manager.switch_to(MovieDialogSG.movies_pagination, show_mode=ShowMode.EDIT)
 
 
 async def get_list_of_found_movies(dialog_manager: DialogManager, *args, **kwargs) -> dict:
     user_request = dialog_manager.dialog_data["user_request"]
     dialog_manager.dialog_data["current_movie_tmdb_id"] = None
 
-
     current_base_movies_page = dialog_manager.dialog_data["current_base_movies_page"]
+
     base_movies = await get_list_of_found_base_subjects_by_title(user_request, TypeOfSubject.movie)
 
     next_page_number, prev_page_number = await calculate_pagination(base_movies, dialog_manager, ITEMS_PER_PAGE,
