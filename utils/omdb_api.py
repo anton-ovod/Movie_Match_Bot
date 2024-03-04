@@ -4,30 +4,32 @@ import logging
 from config_reader import config
 
 from models.movie import Movie, Rating
+from models.tvshow import TVShow
+from models.person import Person
 
 
-async def get_movie_details_omdb(movie: Movie) -> None:
+async def get_subject_details_omdb(subject: Movie | TVShow | Person) -> None:
     try:
         async with aiohttp.ClientSession() as session:
-            movie_details_url = config.omdb_base_url.get_secret_value()
+            subject_details_url = config.omdb_base_url.get_secret_value()
             params = {
                 "apikey": config.omdb_api_key.get_secret_value(),
-                "i": movie.imdb_id,
+                "i": subject.imdb_id,
             }
-            async with session.get(movie_details_url, params=params) as response:
-                movie_detail = await response.json()
-                if countries := movie_detail.get("Country"):
-                    movie.countries = countries.split(", ")
-                if age_categories := movie_detail.get("Rated"):
+            async with session.get(subject_details_url, params=params) as response:
+                subject_detail = await response.json()
+                if countries := subject_detail.get("Country"):
+                    subject.countries = countries.split(", ")
+                if age_categories := subject_detail.get("Rated"):
                     if age_categories != "N/A":
-                        movie.age_categories = age_categories
-                if awards := movie_detail.get("Awards"):
+                        subject.age_categories = age_categories
+                if awards := subject_detail.get("Awards"):
                     if awards != "N/A":
-                        movie.awards = awards
-                if ratings := movie_detail.get("Ratings"):
+                        subject.awards = awards
+                if ratings := subject_detail.get("Ratings"):
                     for rating in ratings[1:]:
-                        movie.ratings.append(Rating(source=rating.get("Source"), value=int(rating.get("Value")[0:2])))
-                if imdb_rating := movie_detail.get("imdbRating"):
-                    movie.ratings.append(Rating(source="IMDB", value=float(imdb_rating)))
+                        subject.ratings.append(Rating(source=rating.get("Source"), value=int(rating.get("Value")[0:2])))
+                if imdb_rating := subject_detail.get("imdbRating"):
+                    subject.ratings.append(Rating(source="IMDB", value=float(imdb_rating)))
     except Exception as e:
-        logging.error(f"Error while getting movie details(OMDB): {e}")
+        logging.error(f"[OMDB API] Error while getting subject's details: {e}")

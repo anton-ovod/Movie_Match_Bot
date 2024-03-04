@@ -147,7 +147,7 @@ async def get_subject_details_tmdb(subject: Movie | TVShow | Person, type_of_sub
                                              provider_logo_url=f'{config.base_image_url.get_secret_value()}'
                                                                f'{provider.get("logo_path")}'))
     except Exception as e:
-        logging.error(f"Error while getting movie details(TMDB): {e}")
+        logging.error(f"[TMDB API] Error while getting subject's details: {e}")
 
 
 async def get_subject_suggestions_by_id(tmdb_id: int, type_of_subject: TypeOfSubject) -> List[BaseSubject]:

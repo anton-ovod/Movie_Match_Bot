@@ -17,7 +17,7 @@ from misc.enums import TypeOfSubject
 from utils.caching_handlers import get_data, set_data, is_exist
 from utils.tmdb_api import (get_subject_details_tmdb, get_subject_suggestions_by_id)
 
-from utils.omdb_api import get_movie_details_omdb
+from utils.omdb_api import get_subject_details_omdb
 
 from models.base import BaseSubject
 from models.movie import Movie
@@ -61,7 +61,7 @@ async def get_list_of_found_movies(dialog_manager: DialogManager, *args, **kwarg
     }
 
 
-async def previous_page_handler(callback: CallbackQuery, message_input: MessageInput, manager: DialogManager):
+async def previous_page_handler(callback: CallbackQuery, _, manager: DialogManager):
     logging.info("Previous page handler")
     if manager.dialog_data["current_base_movies_page"] > 1:
         manager.dialog_data["current_base_movies_page"] -= 1
@@ -69,7 +69,7 @@ async def previous_page_handler(callback: CallbackQuery, message_input: MessageI
         number_of_page=manager.dialog_data["current_base_movies_page"]).encode('utf-8').decode('unicode-escape'))
 
 
-async def next_page_handler(callback: CallbackQuery, message_input: MessageInput, manager: DialogManager):
+async def next_page_handler(callback: CallbackQuery, _, manager: DialogManager):
     logging.info("Next page handler")
     if (manager.dialog_data["current_base_movies_page"] <
             manager.dialog_data["total_number_of_base_movies_pages"]):
@@ -78,7 +78,7 @@ async def next_page_handler(callback: CallbackQuery, message_input: MessageInput
         number_of_page=manager.dialog_data["current_base_movies_page"]).encode('utf-8').decode('unicode-escape'))
 
 
-async def movie_overview_handler(callback: CallbackQuery, button: Button, dialog_manager: DialogManager,
+async def movie_overview_handler(callback: CallbackQuery, _, dialog_manager: DialogManager,
                                  *args, **kwargs):
     movie_tmdb_id = callback.data.split(':')[1]
 
@@ -112,7 +112,7 @@ async def get_movie_overview_data(dialog_manager: DialogManager, *args, **kwargs
         movie = Movie(tmdb_id=movie_tmdb_id)
         await get_subject_details_tmdb(movie, TypeOfSubject.movie)
         if movie.imdb_id:
-            await get_movie_details_omdb(movie)
+            await get_subject_details_omdb(movie)
         logging.info("Movie details: " + movie.json_data)
         await set_data(redis_key, movie.json_data)
 
