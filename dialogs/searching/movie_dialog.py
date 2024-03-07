@@ -11,8 +11,10 @@ from aiogram_dialog.widgets.text import Const, Format, Jinja
 from dialogs.searching import env
 from handlers.searching.common_handlers import unknown_message_handler, message_handler
 from handlers.searching.movie_dialog import (title_request_handler,
-                                             get_list_of_found_movies, movie_overview_handler, next_page_handler,
-                                             previous_page_handler, get_movie_overview_data, movie_suggestions_handler,
+                                             get_list_of_found_movies, movie_overview_handler,
+                                             base_movies_next_page_handler,
+                                             base_movies_previous_page_handler, get_movie_overview_data,
+                                             movie_suggestions_handler,
                                              get_list_of_movie_suggestions, go_to_previous_movie,
                                              go_to_previous_movie_suggestions)
 from misc.states import MovieDialogSG
@@ -23,8 +25,6 @@ movie_overview_message = env.get_template("movie/movie_overview_message.jinja2")
 movie_suggestions_message = env.get_template("movie/movie_suggestions_message.jinja2")
 movie_availability_message = env.get_template("movie/movie_availability_message.jinja2")
 no_results_message = env.get_template("common/no_results_message.jinja2").render()
-
-
 
 keyboard_movies_group = Group(
     Column(
@@ -72,7 +72,7 @@ keyboard_movies_navigation_group = Group(
                on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
         Button(Format("{next_page}"),
                id="next_page",
-               on_click=next_page_handler),
+               on_click=base_movies_next_page_handler),
         when=lambda _, __, dialog_manager:
         dialog_manager.dialog_data["current_base_movies_page"] == 1 and
         dialog_manager.dialog_data["total_number_of_base_movies_pages"] > 1
@@ -81,7 +81,7 @@ keyboard_movies_navigation_group = Group(
     Row(
         Button(Format("{prev_page}"),
                id="prev_page",
-               on_click=previous_page_handler),
+               on_click=base_movies_previous_page_handler),
         Cancel(Const("🕵️ Search"), id="search",
                on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
         when=lambda _, __, dialog_manager:
@@ -94,15 +94,16 @@ keyboard_movies_navigation_group = Group(
     Row(
         Button(Format("{prev_page}"),
                id="prev_page",
-               on_click=previous_page_handler),
+               on_click=base_movies_previous_page_handler),
         Cancel(Const("🕵️ Search"), id="search",
                on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
         Button(Format("{next_page}"),
                id="next_page",
-               on_click=next_page_handler),
-        when=lambda _, __, dialog_manager: dialog_manager.dialog_data["current_base_movies_page"] !=
-                                           dialog_manager.dialog_data["total_number_of_base_movies_pages"] > 1 !=
-                                           dialog_manager.dialog_data["current_base_movies_page"]
+               on_click=base_movies_next_page_handler),
+        when=lambda _, __, dialog_manager:
+        dialog_manager.dialog_data["current_base_movies_page"] !=
+        dialog_manager.dialog_data["total_number_of_base_movies_pages"] > 1 !=
+        dialog_manager.dialog_data["current_base_movies_page"]
 
     )
 
@@ -117,12 +118,14 @@ movie_overview_group = Group(
     Url(
         Const("🎬 Homepage"),
         Format("{imdb_url}"),
-        when=lambda movie_data, _, __: not movie_data.get("homepage") and movie_data.get("imdb_url")
+        when=lambda movie_data, _, __:
+        not movie_data.get("homepage") and movie_data.get("imdb_url")
     ),
     Url(
         Const("🎬 Homepage"),
         Format("{tmdb_url}"),
-        when=lambda movie_data, _, __: not movie_data.get("homepage") and not movie_data.get("imdb_url")
+        when=lambda movie_data, _, __:
+        not movie_data.get("homepage") and not movie_data.get("imdb_url")
     ),
     Url(
         Const("🎞 Trailer"),
@@ -139,7 +142,8 @@ movie_overview_group = Group(
 
     Back(Const("⬅️  Back"),
          on_click=lambda callback, self, manager: callback.answer("🔍 Search"),
-         when=lambda _, __, dialog_manager: not dialog_manager.dialog_data["suggestions_depth_stack"]
+         when=lambda _, __, dialog_manager:
+         not dialog_manager.dialog_data["suggestions_depth_stack"]
          ),
 
     Button(Const("⬅️  Back"),

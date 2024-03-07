@@ -7,7 +7,7 @@ from aiogram.types import Message
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.widgets.input import MessageInput
 
-from misc.enums import TypeOfSubject, TypeOfSubjectFeature
+from misc.enums import TypeOfSubject, TypeOfSubjectFeature, PaginationDirection
 from models.base import BaseSubject
 from utils.caching_handlers import is_exist, get_data, set_data
 from utils.tmdb_api import tmdb_search_by_title
@@ -74,3 +74,20 @@ async def calculate_pagination(base_subjects: List[BaseSubject], dialog_manager:
         else 1
 
     return next_page_number, prev_page_number
+
+
+async def pagination_handler(dialog_manager: DialogManager, direction: PaginationDirection,
+                             type_of_subject: TypeOfSubject):
+    total_number_of_pages = dialog_manager.dialog_data[f"total_number_of_base_{type_of_subject.value}s_pages"]
+    current_page = dialog_manager.dialog_data[f"current_base_{type_of_subject.value}s_page"]
+
+    current_page += direction.value
+
+    if current_page < 1:
+        current_page = 1
+    elif current_page > total_number_of_pages:
+        current_page = total_number_of_pages
+
+    dialog_manager.dialog_data[f"current_base_{type_of_subject.value}s_page"] = current_page
+
+

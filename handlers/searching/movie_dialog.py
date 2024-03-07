@@ -10,9 +10,10 @@ from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
 
 from handlers.searching.common_handlers import (get_list_of_found_base_subjects_by_title,
-                                                calculate_pagination, subject_title_request_handler)
+                                                calculate_pagination, subject_title_request_handler,
+                                                pagination_handler)
 from misc.states import MovieDialogSG
-from misc.enums import TypeOfSubject
+from misc.enums import TypeOfSubject, PaginationDirection
 
 from utils.caching_handlers import get_data, set_data, is_exist
 from utils.tmdb_api import (get_subject_details_tmdb, get_subject_suggestions_by_id)
@@ -61,19 +62,16 @@ async def get_list_of_found_movies(dialog_manager: DialogManager, *args, **kwarg
     }
 
 
-async def previous_page_handler(callback: CallbackQuery, _, manager: DialogManager):
-    logging.info("Previous page handler")
-    if manager.dialog_data["current_base_movies_page"] > 1:
-        manager.dialog_data["current_base_movies_page"] -= 1
+async def base_movies_previous_page_handler(callback: CallbackQuery, _, manager: DialogManager):
+    logging.info("[Base Movies] Previous page handler")
+    await pagination_handler(manager, PaginationDirection.previous, TypeOfSubject.movie)
     await callback.answer("Page " + navigation_emoji.format(
         number_of_page=manager.dialog_data["current_base_movies_page"]).encode('utf-8').decode('unicode-escape'))
 
 
-async def next_page_handler(callback: CallbackQuery, _, manager: DialogManager):
-    logging.info("Next page handler")
-    if (manager.dialog_data["current_base_movies_page"] <
-            manager.dialog_data["total_number_of_base_movies_pages"]):
-        manager.dialog_data["current_base_movies_page"] += 1
+async def base_movies_next_page_handler(callback: CallbackQuery, _, manager: DialogManager):
+    logging.info("[Base Movies]  Next page handler")
+    await pagination_handler(manager, PaginationDirection.next, TypeOfSubject.movie)
     await callback.answer("Page " + navigation_emoji.format(
         number_of_page=manager.dialog_data["current_base_movies_page"]).encode('utf-8').decode('unicode-escape'))
 
