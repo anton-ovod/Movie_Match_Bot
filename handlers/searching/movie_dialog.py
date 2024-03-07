@@ -11,7 +11,8 @@ from aiogram_dialog.widgets.kbd import Button
 from handlers.searching.common_handlers import (get_list_of_found_base_subjects_by_title,
                                                 calculate_pagination, subject_title_request_handler,
                                                 pagination_handler, get_subject_overview_by_id,
-                                                get_list_of_subject_suggestions_by_id)
+                                                get_list_of_subject_suggestions_by_id,
+                                                suggestions_previous_movie_handler, previous_movie_suggestions_handler)
 from misc.states import MovieDialogSG
 from misc.enums import TypeOfSubject, PaginationDirection, PaginationLocation
 
@@ -140,20 +141,13 @@ async def get_list_of_movie_suggestions(dialog_manager: DialogManager, *args, **
     }
 
 
-async def go_to_previous_movie(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    dialog_manager.dialog_data["current_movie_tmdb_id"] = dialog_manager.dialog_data[
-        "suggestions_depth_stack"].pop()
+async def go_to_previous_movie(callback: CallbackQuery, _, dialog_manager: DialogManager):
+    await suggestions_previous_movie_handler(dialog_manager, TypeOfSubject.movie)
     await dialog_manager.switch_to(MovieDialogSG.movie_overview, show_mode=ShowMode.EDIT)
     await callback.answer("🎬 Movie overview")
 
 
-async def go_to_previous_movie_suggestions(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    dialog_manager.dialog_data["current_movie_tmdb_id"] = dialog_manager.dialog_data[
-        "suggestions_depth_stack"][-1]
-
-    previous_movie_data = await get_data(f"movieoverview:{dialog_manager.dialog_data['current_movie_tmdb_id']}")
-    previous_movie = Movie(**(json.loads(previous_movie_data)))
-    dialog_manager.dialog_data["current_movie_pretty_title"] = previous_movie.pretty_title
-
+async def go_to_previous_movie_suggestions(callback: CallbackQuery, _, dialog_manager: DialogManager):
+    await previous_movie_suggestions_handler(dialog_manager, TypeOfSubject.movie)
     await dialog_manager.switch_to(MovieDialogSG.movie_suggestions, show_mode=ShowMode.EDIT)
     await callback.answer("🎬 Movie suggestions")

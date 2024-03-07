@@ -1,6 +1,5 @@
 import json
 import logging
-import math
 from typing import List
 
 from aiogram.types import Message
@@ -19,6 +18,12 @@ from utils.tmdb_api import tmdb_search_by_title, get_subject_details_tmdb, get_s
 from dialogs.searching import env
 
 unknown_type_message = env.get_template("common/unknown_type_message.jinja2").render()
+
+class_name = {
+    TypeOfSubject.movie: Movie,
+    TypeOfSubject.tv_show: TVShow,
+    TypeOfSubject.person: Person
+}
 
 
 async def message_handler(message: Message, message_input: MessageInput, dialog_manager: DialogManager):
@@ -65,12 +70,6 @@ async def get_subject_overview_by_id(subject_id: int,
                                      type_of_subject: TypeOfSubject) -> Movie | TVShow | Person:
     redis_key = f"{type_of_subject.value}:overview:{subject_id}"
 
-    class_name = {
-        TypeOfSubject.movie: Movie,
-        TypeOfSubject.tv_show: TVShow,
-        TypeOfSubject.person: Person
-    }
-
     subject_class = class_name[type_of_subject]
 
     if await is_exist(redis_key):
@@ -106,9 +105,27 @@ async def get_list_of_subject_suggestions_by_id(subject_id: int,
     return subject_suggestions
 
 
+async def suggestions_previous_movie_handler(dialog_manager: DialogManager, type_of_subject: TypeOfSubject):
+    dialog_manager.dialog_data[f"current_{type_of_subject.value}_tmdb_id"] = (
+        dialog_manager.dialog_data["suggestions_depth_stack"].pop())
+
+
+async def previous_movie_suggestions_handler(dialog_manager: DialogManager, type_of_subject: TypeOfSubject):
+    dialog_manager.dialog_data[f"current_{type_of_subject.value}_tmdb_id"] = (
+        dialog_manager.dialog_data)["suggestions_depth_stack"][-1]
+
+    current_tmdb_id = dialog_manager.dialog_data[f"current_{type_of_subject.value}_tmdb_id"]
+    redis_key = f"{type_of_subject.value}:overview:{current_tmdb_id}"
+    subject_class = class_name[type_of_subject]
+
+    previous_movie_data = await get_data(redis_key)
+    previous_movie = subject_class(**(json.loads(previous_movie_data)))
+
+    dialog_manager.dialog_data["current_movie_pretty_title"] = previous_movie.pretty_title
+
+
 async def calculate_pagination(current_page: int,
                                number_of_pages) -> (int, int):
-
     next_page_number = current_page + 1 if current_page + 1 <= number_of_pages else number_of_pages
 
     prev_page_number = current_page - 1 if current_page - 1 > 0 else 1
@@ -129,4 +146,3 @@ async def pagination_handler(dialog_manager: DialogManager, direction: Paginatio
         current_page = total_number_of_pages
 
     dialog_manager.dialog_data[f"{pagination_location}_pagination_current_page"] = current_page
-
