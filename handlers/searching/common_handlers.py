@@ -7,10 +7,14 @@ from aiogram.types import Message
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.widgets.input import MessageInput
 
-from misc.enums import TypeOfSubject, TypeOfSubjectFeature, PaginationDirection
+from misc.enums import TypeOfSubject, PaginationDirection
 from models.base import BaseSubject
+from models.movie import Movie
+from models.tvshow import TVShow
+from models.person import Person
 from utils.caching_handlers import is_exist, get_data, set_data
-from utils.tmdb_api import tmdb_search_by_title
+from utils.omdb_api import get_subject_details_omdb
+from utils.tmdb_api import tmdb_search_by_title, get_subject_details_tmdb
 
 from dialogs.searching import env
 
@@ -60,6 +64,35 @@ async def get_list_of_found_base_subjects_by_title(user_request: str,
     return base_subjects
 
 
+async def get_subject_overview_by_id(subject_id: int,
+                                     type_of_subject: TypeOfSubject) -> Movie | TVShow | Person:
+
+    redis_key = f"{type_of_subject.value}:overview:{subject_id}"
+    # create a dict that will write to a specific type of subject specific class name
+
+    class_name = {
+        TypeOfSubject.movie: Movie,
+        TypeOfSubject.tv_show: TVShow,
+        TypeOfSubject.person: Person
+    }
+
+    subject_class = class_name[type_of_subject]
+
+    if await is_exist(redis_key):
+        logging.info(f"Retrieving data from Redis by key: {redis_key}")
+        cache = await get_data(redis_key)
+        subject = subject_class(**(json.loads(cache)))
+    else:
+        logging.info(f"Making a API request to TMDB API by {type_of_subject.value} id: {subject_id}")
+        subject = subject_class(tmdb_id=subject_id)
+        await get_subject_details_tmdb(subject, type_of_subject)
+        if subject.imdb_id:
+            await get_subject_details_omdb(subject)
+        logging.info(f"{type_of_subject.value} overview details: " + subject.json_data)
+        await set_data(redis_key, subject.json_data)
+
+    return subject
+
 async def calculate_pagination(base_subjects: List[BaseSubject], dialog_manager: DialogManager,
                                items_per_page: int, type_of_subject: TypeOfSubject) -> (int, int):
     number_of_pages = math.ceil(len(base_subjects) / items_per_page)
@@ -89,5 +122,3 @@ async def pagination_handler(dialog_manager: DialogManager, direction: Paginatio
         current_page = total_number_of_pages
 
     dialog_manager.dialog_data[f"current_base_{type_of_subject.value}s_page"] = current_page
-
-

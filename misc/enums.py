@@ -7,13 +7,6 @@ class TypeOfSubject(Enum):
     person = "person"
 
 
-class TypeOfSubjectFeature(Enum):
-    base_subjects = "base_subjects"
-    overview = "overview"
-    suggestions = "suggestions"
-
-
 class PaginationDirection(Enum):
     next = 1
     previous = -1
-

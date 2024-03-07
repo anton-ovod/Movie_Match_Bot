@@ -6,12 +6,11 @@ from aiogram import Router
 from aiogram.types import CallbackQuery, Message
 
 from aiogram_dialog import DialogManager, ShowMode
-from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
 
 from handlers.searching.common_handlers import (get_list_of_found_base_subjects_by_title,
                                                 calculate_pagination, subject_title_request_handler,
-                                                pagination_handler)
+                                                pagination_handler, get_subject_overview_by_id)
 from misc.states import MovieDialogSG
 from misc.enums import TypeOfSubject, PaginationDirection
 
@@ -77,7 +76,7 @@ async def base_movies_next_page_handler(callback: CallbackQuery, _, manager: Dia
 
 
 async def movie_overview_handler(callback: CallbackQuery, _, dialog_manager: DialogManager,
-                                 *args, **kwargs):
+                                 *args, **kwargs) -> None:
     movie_tmdb_id = callback.data.split(':')[1]
 
     logging.info(f"Movie overview handler: {movie_tmdb_id}")
@@ -89,34 +88,12 @@ async def movie_overview_handler(callback: CallbackQuery, _, dialog_manager: Dia
 
 
 async def get_movie_overview_data(dialog_manager: DialogManager, *args, **kwargs) -> dict:
-    """
-    Get movie overview data from dialog manager.
 
-    :param dialog_manager:
-    :param args:
-    :param kwargs:
-    :return:  Movie overview data.
-
-    """
     movie_tmdb_id = dialog_manager.dialog_data["current_movie_tmdb_id"]
-    redis_key = f"movieoverview:{movie_tmdb_id}"
-
-    if await is_exist(redis_key):
-        logging.info(f"Retrieving data from Redis by key: {redis_key}")
-        cache = await get_data(redis_key)
-        movie = Movie(**(json.loads(cache)))
-    else:
-        logging.info(f"Making a API request to TMDB API by movie id: {movie_tmdb_id}")
-        movie = Movie(tmdb_id=movie_tmdb_id)
-        await get_subject_details_tmdb(movie, TypeOfSubject.movie)
-        if movie.imdb_id:
-            await get_subject_details_omdb(movie)
-        logging.info("Movie details: " + movie.json_data)
-        await set_data(redis_key, movie.json_data)
+    movie = await get_subject_overview_by_id(movie_tmdb_id, TypeOfSubject.movie)
 
     dialog_manager.dialog_data["current_movie_pretty_title"] = movie.pretty_title
-    dump_data = movie.model_dump()
-    return dump_data
+    return movie.model_dump()
 
 
 async def movie_suggestions_handler(callback: CallbackQuery, button: Button, dialog_manager: DialogManager,
