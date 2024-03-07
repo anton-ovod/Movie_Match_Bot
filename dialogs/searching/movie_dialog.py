@@ -52,8 +52,8 @@ keyboard_movies_navigation_group = Group(
                when=lambda _, __, dialog_manager:
                dialog_manager.dialog_data["suggestions_depth_stack"]
                ),
-        when=lambda _, __, dialog_manager:
-        dialog_manager.dialog_data["total_number_of_base_movies_pages"] == 1
+        when=lambda dialog_data, _, __:
+        dialog_data["total_number_of_pages"] == 1
     ),
 
     Row(
@@ -73,9 +73,9 @@ keyboard_movies_navigation_group = Group(
         Button(Format("{next_page}"),
                id="next_page",
                on_click=base_movies_next_page_handler),
-        when=lambda _, __, dialog_manager:
-        dialog_manager.dialog_data["current_base_movies_page"] == 1 and
-        dialog_manager.dialog_data["total_number_of_base_movies_pages"] > 1
+        when=lambda dialog_data, _, __:
+        dialog_data["current_page"] == 1 and
+        dialog_data["total_number_of_pages"] > 1
     ),
 
     Row(
@@ -84,10 +84,10 @@ keyboard_movies_navigation_group = Group(
                on_click=base_movies_previous_page_handler),
         Cancel(Const("🕵️ Search"), id="search",
                on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
-        when=lambda _, __, dialog_manager:
-        dialog_manager.dialog_data["current_base_movies_page"] ==
-        dialog_manager.dialog_data["total_number_of_base_movies_pages"] and
-        dialog_manager.dialog_data["total_number_of_base_movies_pages"] > 1
+        when=lambda dialog_data, _, __:
+        dialog_data["current_page"] ==
+        dialog_data["total_number_of_pages"] and
+        dialog_data["total_number_of_pages"] > 1
 
     ),
 
@@ -100,10 +100,10 @@ keyboard_movies_navigation_group = Group(
         Button(Format("{next_page}"),
                id="next_page",
                on_click=base_movies_next_page_handler),
-        when=lambda _, __, dialog_manager:
-        dialog_manager.dialog_data["current_base_movies_page"] !=
-        dialog_manager.dialog_data["total_number_of_base_movies_pages"] > 1 !=
-        dialog_manager.dialog_data["current_base_movies_page"]
+        when=lambda dialog_data, _, __:
+        dialog_data["current_page"] !=
+        dialog_data["total_number_of_pages"] > 1 !=
+        dialog_data["current_page"]
 
     )
 

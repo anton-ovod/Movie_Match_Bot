@@ -10,16 +10,12 @@ from aiogram_dialog.widgets.kbd import Button
 
 from handlers.searching.common_handlers import (get_list_of_found_base_subjects_by_title,
                                                 calculate_pagination, subject_title_request_handler,
-                                                pagination_handler, get_subject_overview_by_id)
+                                                pagination_handler, get_subject_overview_by_id,
+                                                get_list_of_subject_suggestions_by_id)
 from misc.states import MovieDialogSG
-from misc.enums import TypeOfSubject, PaginationDirection
+from misc.enums import TypeOfSubject, PaginationDirection, PaginationLocation
 
-from utils.caching_handlers import get_data, set_data, is_exist
-from utils.tmdb_api import (get_subject_details_tmdb, get_subject_suggestions_by_id)
-
-from utils.omdb_api import get_subject_details_omdb
-
-from models.base import BaseSubject
+from utils.caching_handlers import get_data
 from models.movie import Movie
 
 movie_search_router = Router()
@@ -35,44 +31,55 @@ async def init_movie_search_dialog(callback: CallbackQuery, _, dialog_manager: D
 
 
 async def title_request_handler(message: Message, _, dialog_manager: DialogManager):
-    await subject_title_request_handler(message, dialog_manager, TypeOfSubject.movie)
+    await subject_title_request_handler(message, dialog_manager)
 
-    await message.delete()
+    dialog_manager.dialog_data["pagination_location"] = PaginationLocation.main.value
+    dialog_manager.dialog_data["main_pagination_current_page"] = 1
 
     await dialog_manager.switch_to(MovieDialogSG.movies_pagination, show_mode=ShowMode.EDIT)
+
+    await message.delete()
 
 
 async def get_list_of_found_movies(dialog_manager: DialogManager, *args, **kwargs) -> dict:
     user_request = dialog_manager.dialog_data["user_request"]
     dialog_manager.dialog_data["current_movie_tmdb_id"] = None
-
-    current_base_movies_page = dialog_manager.dialog_data["current_base_movies_page"]
+    dialog_manager.dialog_data["pagination_location"] = PaginationLocation.main.value
 
     base_movies = await get_list_of_found_base_subjects_by_title(user_request, TypeOfSubject.movie)
 
-    next_page_number, prev_page_number = await calculate_pagination(base_movies, dialog_manager, ITEMS_PER_PAGE,
-                                                                    TypeOfSubject.movie)
+    current_base_movies_page = dialog_manager.dialog_data["main_pagination_current_page"]
+
+    total_number_of_pages = math.ceil(len(base_movies) / ITEMS_PER_PAGE)
+
+    dialog_manager.dialog_data["total_main_pagination_pages"] = total_number_of_pages
+
+    next_page_number, prev_page_number = await calculate_pagination(current_base_movies_page, total_number_of_pages)
 
     return {
         "base_movies": base_movies[(current_base_movies_page - 1) * ITEMS_PER_PAGE:
                                    current_base_movies_page * ITEMS_PER_PAGE],
         "next_page": navigation_emoji.format(number_of_page=next_page_number).encode('utf-8').decode('unicode-escape'),
         "prev_page": navigation_emoji.format(number_of_page=prev_page_number).encode('utf-8').decode('unicode-escape'),
+        "current_page": current_base_movies_page,
+        "total_number_of_pages": total_number_of_pages
     }
 
 
 async def base_movies_previous_page_handler(callback: CallbackQuery, _, manager: DialogManager):
-    logging.info("[Base Movies] Previous page handler")
-    await pagination_handler(manager, PaginationDirection.previous, TypeOfSubject.movie)
+    await pagination_handler(manager, PaginationDirection.previous)
+    pagination_location = manager.dialog_data["pagination_location"]
     await callback.answer("Page " + navigation_emoji.format(
-        number_of_page=manager.dialog_data["current_base_movies_page"]).encode('utf-8').decode('unicode-escape'))
+        number_of_page=manager.dialog_data[f"{pagination_location}_pagination_current_page"]).encode('utf-8').
+                          decode('unicode-escape'))
 
 
 async def base_movies_next_page_handler(callback: CallbackQuery, _, manager: DialogManager):
-    logging.info("[Base Movies]  Next page handler")
-    await pagination_handler(manager, PaginationDirection.next, TypeOfSubject.movie)
+    await pagination_handler(manager, PaginationDirection.next)
+    pagination_location = manager.dialog_data["pagination_location"]
     await callback.answer("Page " + navigation_emoji.format(
-        number_of_page=manager.dialog_data["current_base_movies_page"]).encode('utf-8').decode('unicode-escape'))
+        number_of_page=manager.dialog_data[f"{pagination_location}_pagination_current_page"]).encode('utf-8').
+                          decode('unicode-escape'))
 
 
 async def movie_overview_handler(callback: CallbackQuery, _, dialog_manager: DialogManager,
@@ -88,7 +95,6 @@ async def movie_overview_handler(callback: CallbackQuery, _, dialog_manager: Dia
 
 
 async def get_movie_overview_data(dialog_manager: DialogManager, *args, **kwargs) -> dict:
-
     movie_tmdb_id = dialog_manager.dialog_data["current_movie_tmdb_id"]
     movie = await get_subject_overview_by_id(movie_tmdb_id, TypeOfSubject.movie)
 
@@ -99,7 +105,9 @@ async def get_movie_overview_data(dialog_manager: DialogManager, *args, **kwargs
 async def movie_suggestions_handler(callback: CallbackQuery, button: Button, dialog_manager: DialogManager,
                                     *args, **kwargs):
     logging.info("Movie suggestions handler")
-    dialog_manager.dialog_data["current_keyboard_movies_page"] = 1
+
+    dialog_manager.dialog_data["pagination_location"] = PaginationLocation.suggestions.value
+    dialog_manager.dialog_data["suggestions_pagination_current_page"] = 1
 
     dialog_manager.dialog_data["suggestions_depth_stack"].append(
         dialog_manager.dialog_data["current_movie_tmdb_id"])
@@ -111,37 +119,24 @@ async def movie_suggestions_handler(callback: CallbackQuery, button: Button, dia
 async def get_list_of_movie_suggestions(dialog_manager: DialogManager, *args, **kwargs) -> dict:
     current_movie_tmdb_id = dialog_manager.dialog_data["current_movie_tmdb_id"]
 
-    redis_key = f"keybmoviesuggestions:{current_movie_tmdb_id}"
+    movie_suggestions = await get_list_of_subject_suggestions_by_id(current_movie_tmdb_id, TypeOfSubject.movie)
 
-    if await is_exist(redis_key):
-        logging.info(f"Retrieving data from Redis by key: {redis_key}")
-        cache = await get_data(redis_key)
-        suggestions = [BaseSubject(**(json.loads(item))) for item in cache]
-    else:
-        logging.info(f"Making a API request to TMDB API by movie id: {current_movie_tmdb_id}")
-        suggestions = await get_subject_suggestions_by_id(current_movie_tmdb_id, TypeOfSubject.movie)
-        cache = [movie.json_data for movie in suggestions]
-        await set_data(redis_key, cache)
+    current_suggestions_base_movies_page = dialog_manager.dialog_data["suggestions_pagination_current_page"]
 
-    number_of_pages = math.ceil(len(suggestions) / 10)
+    total_number_of_pages = math.ceil(len(movie_suggestions) / ITEMS_PER_PAGE)
 
-    dialog_manager.dialog_data["total_number_of_keyboard_movies_pages"] = number_of_pages
+    dialog_manager.dialog_data["total_suggestions_pagination_pages"] = total_number_of_pages
 
-    keyboard_movies = suggestions[(dialog_manager.dialog_data["current_keyboard_movies_page"] - 1) * 10:
-                                  dialog_manager.dialog_data["current_keyboard_movies_page"] * 10]
-
-    next_page_number = dialog_manager.dialog_data["current_keyboard_movies_page"] + 1 if \
-        dialog_manager.dialog_data["current_keyboard_movies_page"] + 1 <= number_of_pages \
-        else number_of_pages
-
-    prev_page_number = dialog_manager.dialog_data["current_keyboard_movies_page"] - 1 if \
-        dialog_manager.dialog_data["current_keyboard_movies_page"] - 1 > 0 \
-        else 1
+    next_page_number, prev_page_number = await calculate_pagination(current_suggestions_base_movies_page,
+                                                                    total_number_of_pages)
 
     return {
-        "keyboard_movies": keyboard_movies,
-        "next_page": keys_emojis[next_page_number],
-        "prev_page": keys_emojis[prev_page_number],
+        "base_movies": movie_suggestions[(current_suggestions_base_movies_page - 1) * ITEMS_PER_PAGE:
+                                         current_suggestions_base_movies_page * ITEMS_PER_PAGE],
+        "next_page": navigation_emoji.format(number_of_page=next_page_number).encode('utf-8').decode('unicode-escape'),
+        "prev_page": navigation_emoji.format(number_of_page=prev_page_number).encode('utf-8').decode('unicode-escape'),
+        "current_page": current_suggestions_base_movies_page,
+        "total_number_of_pages": total_number_of_pages
     }
 
 

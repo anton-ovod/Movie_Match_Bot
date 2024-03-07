@@ -7,6 +7,11 @@ class TypeOfSubject(Enum):
     person = "person"
 
 
+class PaginationLocation(Enum):
+    main = "main"
+    suggestions = "suggestions"
+
+
 class PaginationDirection(Enum):
     next = 1
     previous = -1

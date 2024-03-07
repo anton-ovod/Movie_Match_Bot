@@ -14,7 +14,7 @@ from models.tvshow import TVShow
 from models.person import Person
 from utils.caching_handlers import is_exist, get_data, set_data
 from utils.omdb_api import get_subject_details_omdb
-from utils.tmdb_api import tmdb_search_by_title, get_subject_details_tmdb
+from utils.tmdb_api import tmdb_search_by_title, get_subject_details_tmdb, get_subject_suggestions_by_id
 
 from dialogs.searching import env
 
@@ -32,22 +32,19 @@ async def unknown_message_handler(message: Message, *args):
 
 
 async def subject_title_request_handler(message: Message,
-                                        dialog_manager: DialogManager,
-                                        type_of_subject: TypeOfSubject):
+                                        dialog_manager: DialogManager):
     if not message.html_text.isascii():
         await unknown_message_handler(message)
     else:
         dialog_manager.dialog_data["user_request"] = message.text
-        logging.info(f"[{type_of_subject.value} Search] User request: `{message.text}` successfully saved")
 
-        dialog_manager.dialog_data[f"current_base_{type_of_subject.value}s_page"] = 1
         if "suggestions_depth_stack" not in dialog_manager.dialog_data:
             dialog_manager.dialog_data["suggestions_depth_stack"] = []
 
 
 async def get_list_of_found_base_subjects_by_title(user_request: str,
-                                                   type_of_subject: TypeOfSubject,
-                                                   *args, **kwargs) -> List[BaseSubject]:
+                                                   type_of_subject: TypeOfSubject
+                                                   ) -> List[BaseSubject]:
     redis_key = f"basesubjects:{type_of_subject.value}:{user_request.lower().replace(' ', '')}"
 
     if await is_exist(redis_key):
@@ -66,9 +63,7 @@ async def get_list_of_found_base_subjects_by_title(user_request: str,
 
 async def get_subject_overview_by_id(subject_id: int,
                                      type_of_subject: TypeOfSubject) -> Movie | TVShow | Person:
-
     redis_key = f"{type_of_subject.value}:overview:{subject_id}"
-    # create a dict that will write to a specific type of subject specific class name
 
     class_name = {
         TypeOfSubject.movie: Movie,
@@ -93,26 +88,38 @@ async def get_subject_overview_by_id(subject_id: int,
 
     return subject
 
-async def calculate_pagination(base_subjects: List[BaseSubject], dialog_manager: DialogManager,
-                               items_per_page: int, type_of_subject: TypeOfSubject) -> (int, int):
-    number_of_pages = math.ceil(len(base_subjects) / items_per_page)
-    dialog_manager.dialog_data[f"total_number_of_base_{type_of_subject.value}s_pages"] = number_of_pages
 
-    next_page_number = dialog_manager.dialog_data[f"current_base_{type_of_subject.value}s_page"] + 1 if \
-        dialog_manager.dialog_data[f"current_base_{type_of_subject.value}s_page"] + 1 <= number_of_pages \
-        else number_of_pages
+async def get_list_of_subject_suggestions_by_id(subject_id: int,
+                                                type_of_subject: TypeOfSubject) -> List[BaseSubject]:
+    redis_key = f"basesubjects:{type_of_subject.value}:suggestions:{subject_id}"
 
-    prev_page_number = dialog_manager.dialog_data[f"current_base_{type_of_subject.value}s_page"] - 1 if \
-        dialog_manager.dialog_data[f"current_base_{type_of_subject.value}s_page"] - 1 > 0 \
-        else 1
+    if await is_exist(redis_key):
+        logging.info(f"[{type_of_subject.value} suggestions] Retrieving data from Redis by key: {redis_key}")
+        cache = await get_data(redis_key)
+        subject_suggestions = [BaseSubject(**(json.loads(item))) for item in cache]
+    else:
+        logging.info(f"[{type_of_subject.value} suggestions] Making a API request to TMDB API by id: {subject_id}")
+        subject_suggestions = await get_subject_suggestions_by_id(subject_id, type_of_subject)
+        cache = [movie.json_data for movie in subject_suggestions]
+        await set_data(redis_key, cache)
+
+    return subject_suggestions
+
+
+async def calculate_pagination(current_page: int,
+                               number_of_pages) -> (int, int):
+
+    next_page_number = current_page + 1 if current_page + 1 <= number_of_pages else number_of_pages
+
+    prev_page_number = current_page - 1 if current_page - 1 > 0 else 1
 
     return next_page_number, prev_page_number
 
 
-async def pagination_handler(dialog_manager: DialogManager, direction: PaginationDirection,
-                             type_of_subject: TypeOfSubject):
-    total_number_of_pages = dialog_manager.dialog_data[f"total_number_of_base_{type_of_subject.value}s_pages"]
-    current_page = dialog_manager.dialog_data[f"current_base_{type_of_subject.value}s_page"]
+async def pagination_handler(dialog_manager: DialogManager, direction: PaginationDirection) -> None:
+    pagination_location = dialog_manager.dialog_data["pagination_location"]
+    current_page = dialog_manager.dialog_data[f"{pagination_location}_pagination_current_page"]
+    total_number_of_pages = dialog_manager.dialog_data[f"total_{pagination_location}_pagination_pages"]
 
     current_page += direction.value
 
@@ -121,4 +128,5 @@ async def pagination_handler(dialog_manager: DialogManager, direction: Paginatio
     elif current_page > total_number_of_pages:
         current_page = total_number_of_pages
 
-    dialog_manager.dialog_data[f"current_base_{type_of_subject.value}s_page"] = current_page
+    dialog_manager.dialog_data[f"{pagination_location}_pagination_current_page"] = current_page
+
