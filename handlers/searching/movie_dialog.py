@@ -16,9 +16,6 @@ from handlers.searching.common_handlers import (get_list_of_found_base_subjects_
 from misc.states import MovieDialogSG
 from misc.enums import TypeOfSubject, PaginationDirection, PaginationLocation
 
-from utils.caching_handlers import get_data
-from models.movie import Movie
-
 movie_search_router = Router()
 
 ITEMS_PER_PAGE = 7

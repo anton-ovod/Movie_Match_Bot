@@ -104,7 +104,13 @@ keyboard_movies_navigation_group = Group(
         dialog_data["current_page"] !=
         dialog_data["total_number_of_pages"] > 1 !=
         dialog_data["current_page"]
-
+    ),
+    Row(
+        Back(Const("⬅️  Back"),
+             on_click=lambda callback, self, manager:
+             callback.answer("🤖 I'm ready to search for movies!")
+             ),
+        when=lambda movie_data, _, __: not movie_data.get("base_movies")
     )
 
 )
