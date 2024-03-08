@@ -1,6 +1,4 @@
-import logging
 import operator
-import emoji
 
 from aiogram.types import ContentType
 from aiogram_dialog import Window, Dialog

@@ -4,7 +4,6 @@ from typing import List
 
 from aiogram.types import Message
 from aiogram_dialog import DialogManager, ShowMode
-from aiogram_dialog.widgets.input import MessageInput
 
 from misc.enums import TypeOfSubject, PaginationDirection
 from models.base import BaseSubject
@@ -13,7 +12,8 @@ from models.tvshow import TVShow
 from models.person import Person
 from utils.caching_handlers import is_exist, get_data, set_data
 from utils.omdb_api import get_subject_details_omdb
-from utils.tmdb_api import tmdb_search_by_title, get_subject_details_tmdb, get_subject_suggestions_by_id
+from utils.tmdb_api import (tmdb_search_by_title, get_subject_details_tmdb,
+                            get_subject_suggestions_by_id)
 
 from dialogs.searching import env
 
@@ -26,7 +26,7 @@ class_name = {
 }
 
 
-async def message_handler(message: Message, message_input: MessageInput, dialog_manager: DialogManager):
+async def message_handler(message: Message, _, dialog_manager: DialogManager):
     logging.info(f"Message from '{message.from_user.username}' received: '{message.text}'")
     dialog_manager.show_mode = ShowMode.EDIT
     await message.delete()
