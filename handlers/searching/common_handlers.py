@@ -60,8 +60,9 @@ async def get_list_of_found_base_subjects_by_title(user_request: str,
     else:
         logging.info(f"Making a API request by title: {user_request}")
         base_subjects = await tmdb_search_by_title(user_request, TypeOfSubject.movie)
-        cache = [item.json_data for item in base_subjects]
-        await set_data(redis_key, cache)
+        if base_subjects:
+            cache = [item.json_data for item in base_subjects]
+            await set_data(redis_key, cache)
 
     return base_subjects
 
@@ -99,8 +100,9 @@ async def get_list_of_subject_suggestions_by_id(subject_id: int,
     else:
         logging.info(f"[{type_of_subject.value} suggestions] Making a API request to TMDB API by id: {subject_id}")
         subject_suggestions = await get_subject_suggestions_by_id(subject_id, type_of_subject)
-        cache = [movie.json_data for movie in subject_suggestions]
-        await set_data(redis_key, cache)
+        if subject_suggestions:
+            cache = [movie.json_data for movie in subject_suggestions]
+            await set_data(redis_key, cache)
 
     return subject_suggestions
 
