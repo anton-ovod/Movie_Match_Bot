@@ -1,20 +1,17 @@
-import operator
-
 from aiogram.types import ContentType
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Back, Cancel, Group, Select, Row, Column, Button, Url, SwitchTo
-from aiogram_dialog.widgets.text import Const, Format, Jinja
+from aiogram_dialog.widgets.kbd import Cancel, SwitchTo
+from aiogram_dialog.widgets.text import Const, Jinja
 
 from dialogs.searching import env
-from handlers.searching.common_handlers import unknown_message_handler, message_handler
-from handlers.searching.movie_dialog import (title_request_handler,
-                                             get_list_of_found_movies, movie_overview_handler,
-                                             base_movies_next_page_handler,
-                                             base_movies_previous_page_handler, get_movie_overview_data,
-                                             movie_suggestions_handler,
-                                             get_list_of_movie_suggestions, go_to_previous_movie,
-                                             go_to_previous_movie_suggestions)
+from handlers.messages_handlers import message_handler
+from handlers.searching_handlers import subject_title_request_handler
+from keyboards.searching_keyboards import get_base_subjects_keyboard, get_base_subjects_navigation_keyboard, \
+    get_subject_overview_keyboard
+
+from getters.searching_dialogs_getters import (get_list_of_found_base_subjects_by_title, get_subject_overview_by_id,
+                                               get_list_of_subject_suggestions_by_id)
 from misc.states import MovieDialogSG
 
 title_request_message = env.get_template("movie/movie_search_message.jinja2")
@@ -24,188 +21,56 @@ movie_suggestions_message = env.get_template("movie/movie_suggestions_message.ji
 movie_availability_message = env.get_template("movie/movie_availability_message.jinja2")
 no_results_message = env.get_template("common/no_results_message.jinja2").render()
 
-keyboard_movies_group = Group(
-    Column(
-        Select(
-            Format("{item.pretty_title}"),
-            id="base_movies",
-            item_id_getter=operator.itemgetter("tmdb_id"),
-            items="base_movies",
-            on_click=movie_overview_handler,
-        )
-    )
-)
-
-keyboard_movies_navigation_group = Group(
-
-    Row(
-        Back(Const("⬅️  Back"),
-             on_click=lambda callback, self, manager:
-             callback.answer("🤖 I'm ready to search for movies!"),
-             when=lambda _, __, dialog_manager:
-             not dialog_manager.dialog_data["suggestions_depth_stack"]
-             ),
-        Button(Const("⬅️  Back"), id="back",
-               on_click=go_to_previous_movie,
-               when=lambda dialog_data, _, dialog_manager:
-               dialog_manager.dialog_data["suggestions_depth_stack"]
-               or not dialog_data["base_movies"]
-               ),
-        when=lambda dialog_data, _, __:
-        dialog_data["total_number_of_pages"] in (0, 1)
-    ),
-
-    Row(
-        Back(Const("⬅️  Back"),
-             on_click=lambda callback, self, manager:
-             callback.answer("🤖 I'm ready to search for movies!"),
-             when=lambda _, __, dialog_manager:
-             not dialog_manager.dialog_data["suggestions_depth_stack"]
-             ),
-        Button(Const("⬅️  Back"), id="back",
-               on_click=go_to_previous_movie,
-               when=lambda _, __, dialog_manager:
-               dialog_manager.dialog_data["suggestions_depth_stack"]
-               ),
-        Cancel(Const("🕵️ Search"), id="search",
-               on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
-        Button(Format("{next_page}"),
-               id="next_page",
-               on_click=base_movies_next_page_handler),
-        when=lambda dialog_data, _, __:
-        dialog_data["current_page"] == 1 and
-        dialog_data["total_number_of_pages"] > 1
-    ),
-
-    Row(
-        Button(Format("{prev_page}"),
-               id="prev_page",
-               on_click=base_movies_previous_page_handler),
-        Cancel(Const("🕵️ Search"), id="search",
-               on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
-        when=lambda dialog_data, _, __:
-        dialog_data["current_page"] ==
-        dialog_data["total_number_of_pages"] and
-        dialog_data["total_number_of_pages"] > 1
-
-    ),
-
-    Row(
-        Button(Format("{prev_page}"),
-               id="prev_page",
-               on_click=base_movies_previous_page_handler),
-        Cancel(Const("🕵️ Search"), id="search",
-               on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
-        Button(Format("{next_page}"),
-               id="next_page",
-               on_click=base_movies_next_page_handler),
-        when=lambda dialog_data, _, __:
-        dialog_data["current_page"] !=
-        dialog_data["total_number_of_pages"] > 1 !=
-        dialog_data["current_page"]
-    )
-
-)
-
-movie_overview_group = Group(
-    Url(
-        Const("🎬 Homepage"),
-        Format("{homepage}"),
-        when=lambda movie_data, _, __: movie_data.get("homepage")
-    ),
-    Url(
-        Const("🎬 Homepage"),
-        Format("{imdb_url}"),
-        when=lambda movie_data, _, __:
-        not movie_data.get("homepage") and movie_data.get("imdb_url")
-    ),
-    Url(
-        Const("🎬 Homepage"),
-        Format("{tmdb_url}"),
-        when=lambda movie_data, _, __:
-        not movie_data.get("homepage") and not movie_data.get("imdb_url")
-    ),
-    Url(
-        Const("🎞 Trailer"),
-        Format("{trailer_url}"),
-        when=lambda movie_data, _, __: movie_data.get("trailer_url")
-    ),
-
-    Button(Const("🗂 Suggestions"), id="suggestions",
-           on_click=movie_suggestions_handler),
-
-    SwitchTo(Const("📽 Availability"), id="availability",
-             on_click=lambda callback, self, manager: callback.answer("📽 Availability"),
-             state=MovieDialogSG.movie_availability),
-
-    Back(Const("⬅️  Back"),
-         on_click=lambda callback, self, manager: callback.answer("🔍 Search"),
-         when=lambda _, __, dialog_manager:
-         not dialog_manager.dialog_data["suggestions_depth_stack"]
-         ),
-
-    Button(Const("⬅️  Back"),
-           id="back",
-           on_click=go_to_previous_movie_suggestions,
-           when=lambda _, __, dialog_manager: dialog_manager.dialog_data["suggestions_depth_stack"]
-           ),
-
-    Button(Const("🤲 Share"), id="share",
-           on_click=lambda callback, self, manager: callback.answer("🤲 Share")),
-
-    width=2
-)
-
 movie_dialog = Dialog(
     Window(
         Jinja(title_request_message),
-        Cancel(Const("⬅️  Back"),
-               on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
-        MessageInput(title_request_handler, content_types=[ContentType.TEXT]),
-        MessageInput(unknown_message_handler),
+        Cancel(Const("⬅️  Back")),
+        MessageInput(subject_title_request_handler, content_types=[ContentType.TEXT]),
         parse_mode="HTML",
-        state=MovieDialogSG.title_request,
+        state=MovieDialogSG.TITLE_REQUEST,
         disable_web_page_preview=True
     ),
     Window(
         Jinja(results_message,
-              when=lambda movie_data, _, __: movie_data.get("base_movies")),
+              when=lambda movie_data, _, __: movie_data.get("base_subjects")),
         Jinja(no_results_message,
-              when=lambda movie_data, _, __: not movie_data.get("base_movies")),
-        keyboard_movies_group,
-        keyboard_movies_navigation_group,
+              when=lambda movie_data, _, __: not movie_data.get("base_subjects")),
+        get_base_subjects_keyboard(),
+        get_base_subjects_navigation_keyboard(),
         MessageInput(message_handler),
-        getter=get_list_of_found_movies,
-        state=MovieDialogSG.movies_pagination,
+        getter=get_list_of_found_base_subjects_by_title,
+        state=MovieDialogSG.BASE_MOVIES_PAGINATION,
         parse_mode="HTML",
         disable_web_page_preview=True
     ),
     Window(
         Jinja(movie_overview_message),
-        movie_overview_group,
+        get_subject_overview_keyboard(),
         MessageInput(message_handler),
-        state=MovieDialogSG.movie_overview,
-        getter=get_movie_overview_data,
+        state=MovieDialogSG.MOVIE_OVERVIEW,
+        getter=get_subject_overview_by_id,
         parse_mode="HTML",
     ),
     Window(
         Jinja(movie_suggestions_message),
-        keyboard_movies_group,
-        keyboard_movies_navigation_group,
+        get_base_subjects_keyboard(),
+        get_base_subjects_navigation_keyboard(),
         MessageInput(message_handler),
-        getter=get_list_of_movie_suggestions,
-        state=MovieDialogSG.movie_suggestions,
+        getter=get_list_of_subject_suggestions_by_id,
+        state=MovieDialogSG.MOVIE_SUGGESTIONS,
         parse_mode="HTML",
         disable_web_page_preview=True
     ),
     Window(
         Jinja(movie_availability_message),
-        SwitchTo(Const("⬅️  Back"), id="overview",
-                 on_click=lambda callback, self, manager: callback.answer("🎬 Overview"),
-                 state=MovieDialogSG.movie_overview),
+        SwitchTo(
+            Const("⬅️  Back"),
+            id="overview",
+            state=MovieDialogSG.MOVIE_OVERVIEW
+        ),
         MessageInput(message_handler),
-        getter=get_movie_overview_data,
-        state=MovieDialogSG.movie_availability,
+        getter=get_subject_overview_by_id,
+        state=MovieDialogSG.MOVIE_AVAILABILITY,
         parse_mode="HTML",
         disable_web_page_preview=True
     ),

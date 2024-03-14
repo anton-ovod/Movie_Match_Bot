@@ -12,7 +12,7 @@ from models.movie import Movie, Actor, Rating, Provider
 from models.tvshow import TVShow
 from models.person import Person
 
-from misc.enums import TypeOfSubject
+from misc.enums import SearchDialogOptions
 
 
 def create_list_of_keyboard_movies(data: List[Dict]) -> List[BaseSubject]:
@@ -34,10 +34,10 @@ def create_list_of_keyboard_movies(data: List[Dict]) -> List[BaseSubject]:
 
 
 # Functions to get data from TMDb API for movies
-async def tmdb_search_by_title(title: str, type_of_subject: TypeOfSubject) -> List[BaseSubject]:
+async def tmdb_search_by_title(title: str, type_of_subject: SearchDialogOptions) -> List[BaseSubject]:
     try:
         async with aiohttp.ClientSession() as session:
-            search_subject_url = config.tmdb_search_url.get_secret_value() + type_of_subject.value
+            search_subject_url = config.tmdb_search_url.get_secret_value() + type_of_subject.title.lower()
             params = {
                 "api_key": config.api_key.get_secret_value(),
                 "query": title,
@@ -55,11 +55,11 @@ async def tmdb_search_by_title(title: str, type_of_subject: TypeOfSubject) -> Li
         logging.error(f"[TMDB API] Error while searching by title: {e}")
 
 
-async def get_subject_details_tmdb(subject: Movie | TVShow | Person, type_of_subject: TypeOfSubject) -> None:
+async def get_subject_details_tmdb(subject: Movie | TVShow | Person, type_of_subject: SearchDialogOptions) -> None:
     try:
         async with (aiohttp.ClientSession() as session):
             subject_details_url = (f"{config.tmdb_subject_details_url.get_secret_value()}/"
-                                   f"{type_of_subject.value}/{subject.tmdb_id}")
+                                   f"{type_of_subject.title.lower()}/{subject.tmdb_id}")
             params = {
                 "api_key": config.api_key.get_secret_value(),
                 "language": "en-US",
@@ -150,11 +150,11 @@ async def get_subject_details_tmdb(subject: Movie | TVShow | Person, type_of_sub
         logging.error(f"[TMDB API] Error while getting subject's details: {e}")
 
 
-async def get_subject_suggestions_by_id(tmdb_id: int, type_of_subject: TypeOfSubject) -> List[BaseSubject]:
+async def get_subject_suggestions_by_id(tmdb_id: int, type_of_subject: SearchDialogOptions) -> List[BaseSubject]:
     try:
         async with aiohttp.ClientSession() as session:
             subject_recommendations_url = (f"{config.tmdb_subject_details_url.get_secret_value()}/"
-                                           f"{type_of_subject.value}/{tmdb_id}/similar")
+                                           f"{type_of_subject.title.lower()}/{tmdb_id}/similar")
             params = {
                 "api_key": config.api_key.get_secret_value(),
                 "language": "en-US",

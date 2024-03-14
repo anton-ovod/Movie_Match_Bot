@@ -12,9 +12,6 @@ class Person(BaseModel):
     pretty_name: str = None
     tmdb_id: PositiveInt = None
 
-    def __getitem__(self, item):
-        return getattr(self, item)
-
     @property
     def json_data(self) -> str:
         return self.model_dump_json()
