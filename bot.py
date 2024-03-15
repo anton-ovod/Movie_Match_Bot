@@ -14,6 +14,7 @@ from handlers.searching_handlers import searching_router
 
 from dialogs.home_dialog import home_dialog
 from dialogs.searching.movie_dialog import movie_dialog
+from dialogs.searching.tvshow_dialog import tvshow_dialog
 
 from config_reader import config
 
@@ -31,6 +32,7 @@ async def main():
 
     home_router.include_router(home_dialog)
     searching_router.include_router(movie_dialog)
+    searching_router.include_router(tvshow_dialog)
 
     dp.include_routers(home_router, searching_router)
     setup_dialogs(dp)

@@ -15,14 +15,15 @@ from models.person import Person
 from misc.enums import SearchDialogOptions
 
 
-def create_list_of_keyboard_movies(data: List[Dict]) -> List[BaseSubject]:
+def create_list_of_base_subjects(data: List[Dict]) -> List[BaseSubject]:
     results = []
     for item in data:
-        title = item.get("title")
+        title = (item.get("title")
+                 or item.get("name"))
         tmdb_id = item.get("id")
         try:
-            release_date = datetime.strptime(item.get("release_date"), "%Y-%m-%d").date() or \
-                           datetime.strptime(item.get("first_air_date"), "%Y-%m-%d").date()
+            str_date = item.get("release_date") or item.get("first_air_date")
+            release_date = datetime.strptime(str_date, "%Y-%m-%d").date()
         except ValueError:
             release_date = None
         pretty_title = f"{title} ({release_date.year})" if release_date else title
@@ -48,7 +49,7 @@ async def tmdb_search_by_title(title: str, type_of_subject: SearchDialogOptions)
                 data = await response.json()
                 sorted_data = sorted(data.get("results"), key=lambda x: x.get("popularity"), reverse=True)
 
-                results = create_list_of_keyboard_movies(sorted_data)
+                results = create_list_of_base_subjects(sorted_data)
 
                 return results
     except Exception as e:
@@ -164,7 +165,7 @@ async def get_subject_suggestions_by_id(tmdb_id: int, type_of_subject: SearchDia
                 data = await response.json()
                 sorted_data = sorted(data.get("results"), key=lambda x: x.get("popularity"), reverse=True)
 
-                recommendations = create_list_of_keyboard_movies(sorted_data)
+                recommendations = create_list_of_base_subjects(sorted_data)
 
                 return recommendations
     except Exception as e:

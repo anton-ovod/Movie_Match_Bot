@@ -8,9 +8,12 @@ from aiogram_dialog.widgets.text import Const, Jinja, Format
 
 from aiogram_dialog import Dialog
 
+from getters.searching_dialogs_getters import get_list_of_found_base_subjects_by_title
 from handlers.messages_handlers import message_handler, unknown_message_handler
+from handlers.searching_handlers import subject_title_request_handler
 
 from dialogs.searching import env
+from keyboards.searching_keyboards import get_base_subjects_keyboard, get_base_subjects_navigation_keyboard
 
 from misc.states import TVShowDialogSG
 
@@ -23,20 +26,21 @@ tvshow_dialog = Dialog(
         Jinja(tvshow_title_request_message),
         Cancel(Const("⬅️  Back"),
                on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
-        #MessageInput(title_request_handler, content_types=[ContentType.TEXT]),
-        #MessageInput(unknown_message_handler),
+        MessageInput(subject_title_request_handler, content_types=[ContentType.TEXT]),
+        MessageInput(unknown_message_handler),
         state=TVShowDialogSG.TITLE_REQUEST,
         parse_mode="HTML",
         disable_web_page_preview=True,
     ),
     Window(
         Jinja(results_message,
-              when=lambda movie_data, _, __: movie_data.get("base_movies")),
+              when=lambda result_data, _, __: result_data.get("base_subjects")),
         Jinja(no_results_message,
-              when=lambda movie_data, _, __: not movie_data.get("base_movies")),
-        Back(Const("⬅️  Back"),
-             on_click=lambda callback, self, manager: callback.answer("🔍 Search")),
+              when=lambda result_data, _, __: not result_data.get("base_subjects")),
+        get_base_subjects_keyboard(),
+        get_base_subjects_navigation_keyboard(),
         MessageInput(message_handler),
+        getter=get_list_of_found_base_subjects_by_title,
         state=TVShowDialogSG.BASE_TVSHOWS_PAGINATION,
         parse_mode="HTML",
         disable_web_page_preview=True

@@ -41,7 +41,7 @@ class HomeDialogOptions(Enum):
 
 class SearchDialogOptions(Enum):
     MOVIE = ("Movie", MovieDialogSG.TITLE_REQUEST, "🎬")
-    TVSHOW = ("Show", TVShowDialogSG.TITLE_REQUEST, "📺")
+    TVSHOW = ("TV", TVShowDialogSG.TITLE_REQUEST, "📺")
     PERSON = ("Person", PersonDialogSG.NAME_REQUEST, "👤")
 
     @property
