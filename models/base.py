@@ -3,10 +3,6 @@ from datetime import date
 
 
 class BaseSubject(BaseModel):
-    # Data is getting from tmdb api
-    title: str = None
-    release_date: date | None = None
-    pretty_title: str = None
     tmdb_id: PositiveInt = None
 
     def __getitem__(self, item):
@@ -15,3 +11,21 @@ class BaseSubject(BaseModel):
     @property
     def json_data(self) -> str:
         return self.model_dump_json()
+
+
+class BaseMovie(BaseSubject):
+    title: str = None
+    release_date: date | None = None
+    pretty_title: str = None
+
+
+class BaseTVShow(BaseSubject):
+    name: str = None
+    first_air_date: date | None = None
+    pretty_name: str = None
+
+
+class BasePerson(BaseSubject):
+    name: str = None
+    known_for_department: str = None
+    pretty_name: str = None

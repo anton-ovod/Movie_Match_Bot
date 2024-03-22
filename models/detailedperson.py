@@ -5,7 +5,7 @@ from datetime import date
 from config_reader import config
 
 
-class Person(BaseModel):
+class DetailedPerson(BaseModel):
     # Data is getting from tmdb api
     name: str = None
     birthday: date | None = None

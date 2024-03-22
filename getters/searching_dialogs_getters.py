@@ -5,7 +5,7 @@ import math
 from aiogram_dialog import DialogManager
 
 from handlers.searching_handlers import ITEMS_PER_PAGE, navigation_emoji
-from misc.enums import PaginationLocation, SearchDialogOptions, SubjectsModels
+from misc.enums import PaginationLocation, SubjectsModels
 from models.base import BaseSubject
 from utils.caching_handlers import get_data, is_exist, set_data
 from utils.omdb_api import get_subject_details_omdb
@@ -15,21 +15,21 @@ from utils.tmdb_api import tmdb_search_by_title, get_subject_details_tmdb, get_s
 async def get_list_of_found_base_subjects_by_title(dialog_manager: DialogManager, *args, **kwargs) -> dict:
     user_request = dialog_manager.dialog_data["user_request"]
     type_of_subject = dialog_manager.dialog_data["subject_type"]
-    search_dialog_option = getattr(SearchDialogOptions, type_of_subject)
 
     dialog_manager.dialog_data[f"current_{type_of_subject.lower()}_tmdb_id"] = None
-    dialog_manager.dialog_data["pagination_location"] = PaginationLocation.main.value
+    dialog_manager.dialog_data["pagination_location"] = PaginationLocation.MAIN.value
 
     redis_key = f"basesubjects:{type_of_subject.lower()}:{user_request.lower().replace(' ', '')}"
 
     if await is_exist(redis_key):
         logging.info(f"Retrieving data from Redis by key: {redis_key}")
         cache = await get_data(redis_key)
-        base_subjects = [BaseSubject(**(json.loads(item)))
+        subject_class = getattr(SubjectsModels, type_of_subject).base_class
+        base_subjects = [subject_class(**(json.loads(item)))
                          for item in cache]
     else:
         logging.info(f"Making a API request by title: {user_request}")
-        base_subjects = await tmdb_search_by_title(user_request, search_dialog_option)
+        base_subjects = await tmdb_search_by_title(user_request, type_of_subject.lower())
         if base_subjects:
             cache = [item.json_data for item in base_subjects]
             await set_data(redis_key, cache)
@@ -57,11 +57,10 @@ async def get_list_of_found_base_subjects_by_title(dialog_manager: DialogManager
 async def get_subject_overview_by_id(dialog_manager: DialogManager, *args, **kwargs) -> dict:
     type_of_subject = dialog_manager.dialog_data["subject_type"]
     subject_tmdb_id = dialog_manager.dialog_data[f"current_{type_of_subject.lower()}_tmdb_id"]
-    search_dialog_option = getattr(SearchDialogOptions, type_of_subject)
 
     redis_key = f"{type_of_subject.lower()}:overview:{subject_tmdb_id}"
 
-    subject_class = getattr(SubjectsModels, type_of_subject).value
+    subject_class = getattr(SubjectsModels, type_of_subject).detailed_class
 
     if await is_exist(redis_key):
         logging.info(f"Retrieving data from Redis by key: {redis_key}")
@@ -70,7 +69,7 @@ async def get_subject_overview_by_id(dialog_manager: DialogManager, *args, **kwa
     else:
         logging.info(f"Making a API request to TMDB API by {type_of_subject.lower()} id: {subject_tmdb_id}")
         subject = subject_class(tmdb_id=subject_tmdb_id)
-        await get_subject_details_tmdb(subject, search_dialog_option)
+        await get_subject_details_tmdb(subject, type_of_subject.lower())
         if subject.imdb_id:
             await get_subject_details_omdb(subject)
         logging.info(f"{type_of_subject.lower()} overview details: " + subject.json_data)
@@ -83,20 +82,20 @@ async def get_subject_overview_by_id(dialog_manager: DialogManager, *args, **kwa
 async def get_list_of_subject_suggestions_by_id(dialog_manager: DialogManager, *args, **kwargs) -> dict:
     type_of_subject = dialog_manager.dialog_data["subject_type"]
     subject_tmdb_id = dialog_manager.dialog_data[f"current_{type_of_subject.lower()}_tmdb_id"]
-    search_dialog_option = getattr(SearchDialogOptions, type_of_subject)
 
     redis_key = f"basesubjects:{type_of_subject.lower()}:suggestions:{subject_tmdb_id}"
 
     if await is_exist(redis_key):
         logging.info(f"[{type_of_subject.lower()} suggestions] Retrieving data from Redis by key: {redis_key}")
         cache = await get_data(redis_key)
-        subject_suggestions = [BaseSubject(**(json.loads(item))) for item in cache]
+        subject_class = getattr(SubjectsModels, type_of_subject).base_class
+        subject_suggestions = [subject_class(**(json.loads(item))) for item in cache]
     else:
         logging.info(
             f"[{type_of_subject.lower()} suggestions] Making a API request to TMDB API by id: {subject_tmdb_id}")
-        subject_suggestions = await get_subject_suggestions_by_id(subject_tmdb_id, search_dialog_option)
+        subject_suggestions = await get_subject_suggestions_by_id(subject_tmdb_id, type_of_subject.lower())
         if subject_suggestions:
-            cache = [movie.json_data for movie in subject_suggestions]
+            cache = [item.json_data for item in subject_suggestions]
             await set_data(redis_key, cache)
 
     current_subject_suggestions_page = dialog_manager.dialog_data["suggestions_pagination_current_page"]

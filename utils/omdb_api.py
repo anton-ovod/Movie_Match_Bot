@@ -2,13 +2,14 @@ import aiohttp
 import logging
 
 from config_reader import config
+from models.common import Rating
 
-from models.movie import Movie, Rating
-from models.tvshow import TVShow
-from models.person import Person
+from models.detailedmovie import DetailedMovie
+from models.detailedtvshow import DetailedTVShow
+from models.detailedperson import DetailedPerson
 
 
-async def get_subject_details_omdb(subject: Movie | TVShow | Person) -> None:
+async def get_subject_details_omdb(subject: DetailedMovie | DetailedTVShow | DetailedPerson) -> None:
     try:
         async with aiohttp.ClientSession() as session:
             subject_details_url = config.omdb_base_url.get_secret_value()

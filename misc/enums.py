@@ -1,14 +1,30 @@
 from enum import Enum
 from misc.states import MovieDialogSG, TVShowDialogSG, PersonDialogSG, HomeDialogSG
-from models.movie import Movie
-from models.person import Person
-from models.tvshow import TVShow
+from models.base import BaseMovie, BasePerson, BaseTVShow
+from models.detailedmovie import DetailedMovie
+from models.detailedperson import DetailedPerson
+from models.detailedtvshow import DetailedTVShow
 
 
 class SubjectsModels(Enum):
-    MOVIE = Movie
-    TVSHOW = TVShow
-    PERSON = Person
+    MOVIE = (BaseMovie, DetailedMovie)
+    TVSHOW = (BaseTVShow, DetailedTVShow)
+    PERSON = (BasePerson, DetailedPerson)
+
+    @classmethod
+    def from_string(cls, value):
+        for subject in cls:
+            if value.lower() == subject.name.lower():
+                return subject
+        raise ValueError(f"No enum member with name '{value}'")
+
+    @property
+    def base_class(self):
+        return self.value[0]
+
+    @property
+    def detailed_class(self):
+        return self.value[1]
 
 
 class StatesGroups(Enum):
@@ -58,5 +74,5 @@ class SearchDialogOptions(Enum):
 
 
 class PaginationLocation(Enum):
-    main = "main"
-    suggestions = "suggestions"
+    MAIN = "main"
+    SUGGESTIONS = "suggestions"

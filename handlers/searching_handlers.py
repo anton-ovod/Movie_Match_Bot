@@ -23,7 +23,7 @@ async def subject_title_request_handler(message: Message,
         await unknown_message_handler(message)
     else:
         dialog_manager.dialog_data["user_request"] = message.text
-        dialog_manager.dialog_data["pagination_location"] = PaginationLocation.main.value
+        dialog_manager.dialog_data["pagination_location"] = PaginationLocation.MAIN.value
         dialog_manager.dialog_data["main_pagination_current_page"] = 1
 
         if "suggestions_depth_stack" not in dialog_manager.dialog_data:
@@ -66,7 +66,7 @@ async def subject_suggestions_handler(_,
                                       dialog_manager: DialogManager,
                                       *args,
                                       **kwargs):
-    dialog_manager.dialog_data["pagination_location"] = PaginationLocation.suggestions.value
+    dialog_manager.dialog_data["pagination_location"] = PaginationLocation.SUGGESTIONS.value
     dialog_manager.dialog_data["suggestions_pagination_current_page"] = 1
     subject_type = dialog_manager.dialog_data["subject_type"]
 
@@ -138,7 +138,7 @@ async def previous_movie_suggestions_handler(_,
                                              __,
                                              dialog_manager: DialogManager):
     subject_type = dialog_manager.dialog_data["subject_type"]
-    subject_class = getattr(SubjectsModels, subject_type).value
+    subject_class = getattr(SubjectsModels, subject_type).detailed_class
 
     dialog_manager.dialog_data[f"current_{subject_type.lower()}_tmdb_id"] = (
         dialog_manager.dialog_data)["suggestions_depth_stack"][-1]
