@@ -5,7 +5,7 @@ import math
 from aiogram_dialog import DialogManager
 
 from handlers.searching_handlers import ITEMS_PER_PAGE, navigation_emoji
-from misc.enums import PaginationLocation, SubjectsModels
+from misc.enums import PaginationLocation, SubjectsModels, SearchDialogOptions
 from models.base import BaseSubject
 from utils.caching_handlers import get_data, is_exist, set_data
 from utils.omdb_api import get_subject_details_omdb
@@ -29,7 +29,8 @@ async def get_list_of_found_base_subjects_by_title(dialog_manager: DialogManager
                          for item in cache]
     else:
         logging.info(f"Making a API request by title: {user_request}")
-        base_subjects = await tmdb_search_by_title(user_request, type_of_subject.lower())
+
+        base_subjects = await tmdb_search_by_title(user_request, type_of_subject)
         if base_subjects:
             cache = [item.json_data for item in base_subjects]
             await set_data(redis_key, cache)
@@ -69,7 +70,8 @@ async def get_subject_overview_by_id(dialog_manager: DialogManager, *args, **kwa
     else:
         logging.info(f"Making a API request to TMDB API by {type_of_subject.lower()} id: {subject_tmdb_id}")
         subject = subject_class(tmdb_id=subject_tmdb_id)
-        await get_subject_details_tmdb(subject, type_of_subject.lower())
+        search_endpoint = getattr(SearchDialogOptions, type_of_subject).title
+        await get_subject_details_tmdb(subject, search_endpoint.lower())
         if subject.imdb_id:
             await get_subject_details_omdb(subject)
         logging.info(f"{type_of_subject.lower()} overview details: " + subject.json_data)
@@ -93,7 +95,7 @@ async def get_list_of_subject_suggestions_by_id(dialog_manager: DialogManager, *
     else:
         logging.info(
             f"[{type_of_subject.lower()} suggestions] Making a API request to TMDB API by id: {subject_tmdb_id}")
-        subject_suggestions = await get_subject_suggestions_by_id(subject_tmdb_id, type_of_subject.lower())
+        subject_suggestions = await get_subject_suggestions_by_id(subject_tmdb_id, type_of_subject)
         if subject_suggestions:
             cache = [item.json_data for item in subject_suggestions]
             await set_data(redis_key, cache)

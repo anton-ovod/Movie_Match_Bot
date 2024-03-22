@@ -39,7 +39,7 @@ async def searching_options_button_on_click(callback: CallbackQuery,
     enum_object = getattr(SearchDialogOptions, button_id)
     await manager.start(enum_object.state, show_mode=ShowMode.EDIT)
     manager.dialog_data["subject_type"] = enum_object.name
-    await callback.answer(f"🤖 I'm ready to search for {enum_object.emoji} {enum_object.title}s!")
+    await callback.answer(f"🤖 I'm ready to search for {enum_object.emoji} {enum_object.name.lower().capitalize()}s!")
 
 
 def get_searching_options_keyboard() -> Keyboard:

@@ -5,7 +5,7 @@ from typing import List, Dict
 from config_reader import config
 from datetime import datetime
 
-from misc.enums import SubjectsModels
+from misc.enums import SubjectsModels, SearchDialogOptions
 
 from models.base import BaseSubject, BaseMovie, BaseTVShow, BasePerson
 from models.common import Rating, Actor, Provider
@@ -44,16 +44,16 @@ def create_list_of_base_subjects(data: List[Dict], type_of_subject: str) -> List
 
         if known_for_department := item.get("known_for_department"):
             attributes["known_for_department"] = known_for_department
-            pretty_title = f"{title} ({known_for_department})"
-            attributes["pretty_title"] = pretty_title
+            pretty_name = f"{title} ({known_for_department})"
+            attributes["pretty_title"] = pretty_name
 
         if release_date := attributes.get("release_date"):
             pretty_title = f"{title} ({release_date.year})"
             attributes["pretty_title"] = pretty_title
 
         elif first_air_date := attributes.get("first_air_date"):
-            pretty_title = f"{name} ({first_air_date.year})"
-            attributes["pretty_title"] = pretty_title
+            pretty_name = f"{name} ({first_air_date.year})"
+            attributes["pretty_title"] = pretty_name
 
         try:
             subject_class = getattr(SubjectsModels, type_of_subject).base_class
@@ -68,8 +68,9 @@ def create_list_of_base_subjects(data: List[Dict], type_of_subject: str) -> List
 # Functions to get data from TMDb API for movies
 async def tmdb_search_by_title(title: str, type_of_subject: str) -> List[BaseSubject]:
     try:
+        searching_endpoint = getattr(SearchDialogOptions, type_of_subject).title
         async with aiohttp.ClientSession() as session:
-            search_subject_url = config.tmdb_search_url.get_secret_value() + type_of_subject
+            search_subject_url = config.tmdb_search_url.get_secret_value() + searching_endpoint.lower()
             params = {
                 "api_key": config.api_key.get_secret_value(),
                 "query": title,
@@ -185,9 +186,10 @@ async def get_subject_details_tmdb(subject: DetailedMovie | DetailedTVShow | Det
 
 async def get_subject_suggestions_by_id(tmdb_id: int, type_of_subject: str) -> List[BaseSubject]:
     try:
+        searching_endpoint = getattr(SearchDialogOptions, type_of_subject).title.lower()
         async with aiohttp.ClientSession() as session:
             subject_recommendations_url = (f"{config.tmdb_subject_details_url.get_secret_value()}/"
-                                           f"{type_of_subject}/{tmdb_id}/similar")
+                                           f"{searching_endpoint}/{tmdb_id}/similar")
             params = {
                 "api_key": config.api_key.get_secret_value(),
                 "language": "en-US",
@@ -197,7 +199,7 @@ async def get_subject_suggestions_by_id(tmdb_id: int, type_of_subject: str) -> L
                 data = await response.json()
                 sorted_data = sorted(data.get("results"), key=lambda x: x.get("popularity"), reverse=True)
 
-                recommendations = create_list_of_base_subjects(sorted_data)
+                recommendations = create_list_of_base_subjects(sorted_data, type_of_subject)
 
                 return recommendations
     except Exception as e:

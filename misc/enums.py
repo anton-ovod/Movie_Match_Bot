@@ -11,13 +11,6 @@ class SubjectsModels(Enum):
     TVSHOW = (BaseTVShow, DetailedTVShow)
     PERSON = (BasePerson, DetailedPerson)
 
-    @classmethod
-    def from_string(cls, value):
-        for subject in cls:
-            if value.lower() == subject.name.lower():
-                return subject
-        raise ValueError(f"No enum member with name '{value}'")
-
     @property
     def base_class(self):
         return self.value[0]

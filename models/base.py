@@ -4,6 +4,7 @@ from datetime import date
 
 class BaseSubject(BaseModel):
     tmdb_id: PositiveInt = None
+    pretty_title: str = None
 
     def __getitem__(self, item):
         return getattr(self, item)
@@ -16,16 +17,13 @@ class BaseSubject(BaseModel):
 class BaseMovie(BaseSubject):
     title: str = None
     release_date: date | None = None
-    pretty_title: str = None
 
 
 class BaseTVShow(BaseSubject):
     name: str = None
     first_air_date: date | None = None
-    pretty_name: str = None
 
 
 class BasePerson(BaseSubject):
     name: str = None
     known_for_department: str = None
-    pretty_name: str = None

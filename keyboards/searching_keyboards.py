@@ -32,7 +32,7 @@ def get_base_subjects_navigation_keyboard() -> Keyboard:
                    on_click=previous_movie_overview_handler,
                    when=lambda dialog_data, _, dialog_manager:
                    dialog_manager.dialog_data["suggestions_depth_stack"]
-                   or not dialog_data["base_movies"]
+                   or not dialog_data["base_subjects"]
                    ),
             when=lambda dialog_data, _, __:
             dialog_data["total_number_of_pages"] in (0, 1)
