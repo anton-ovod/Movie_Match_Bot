@@ -56,7 +56,7 @@ def create_list_of_base_subjects(data: List[Dict], type_of_subject: str) -> List
             attributes["pretty_title"] = pretty_title
 
         try:
-            subject_class = SubjectsModels.from_string(type_of_subject).base_class
+            subject_class = getattr(SubjectsModels, type_of_subject).base_class
         except ValueError as e:
             logging.error(f"[TMDB API] Error while creating list of base subjects: {e}")
             return []
